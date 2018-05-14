@@ -5,6 +5,8 @@ authors = ["Hamid Ghadyani <hamid@hamid.cc>"]
 description = """
 A library for writing Alfred workflows with
 features such as workflow update.
+
+https://www.alfredapp.com
 """
 
 documentation = "https://docs.rs/alfred-rs/"
