@@ -13,7 +13,6 @@
 
 extern crate alfred;
 extern crate failure;
-extern crate semver;
 extern crate serde;
 extern crate serde_json;
 
@@ -26,6 +25,8 @@ extern crate tempfile;
 extern crate chrono;
 #[cfg(feature = "updater")]
 extern crate reqwest;
+#[cfg(feature = "updater")]
+extern crate semver;
 #[cfg(feature = "updater")]
 #[macro_use]
 extern crate serde_derive;
@@ -41,5 +42,3 @@ pub mod updater;
 
 #[cfg(feature = "updater")]
 pub use self::updater::Updater;
-
-use alfred::env;
