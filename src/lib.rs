@@ -26,6 +26,7 @@
 //! [`updater`]: updater/index.html
 //! [alfred]: https://crates.io/crates/alfred
 //!
+#![doc(html_root_url = "https://docs.rs/alfred-rs/0.2.1")]
 
 extern crate alfred;
 extern crate failure;
