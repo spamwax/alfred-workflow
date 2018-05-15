@@ -17,7 +17,7 @@ pub(super) struct UpdaterState {
     last_check: Cell<Option<DateTime<Utc>>>,
 
     #[serde(skip, default = "default_interval")]
-    update_interval: i64,
+    update_interval: u64,
     #[serde(skip)]
     worker_state: RefCell<Option<MPSCState>>,
 }
@@ -126,11 +126,11 @@ where
         self.state.last_check.set(Some(t));
     }
 
-    pub(super) fn update_interval(&self) -> i64 {
+    pub(super) fn update_interval(&self) -> u64 {
         self.state.update_interval
     }
 
-    pub(super) fn set_update_interval(&mut self, t: i64) {
+    pub(super) fn set_update_interval(&mut self, t: u64) {
         self.state.update_interval = t;
     }
 
@@ -385,8 +385,7 @@ where
                                 let msg_status = msg.map(|update_info| {
                                     // received good messag, update cache for received payload
                                     *self.state.avail_release.borrow_mut() = update_info.clone();
-                                    *mpsc.recvd_payload.borrow_mut() =
-                                        Some(Ok(update_info.clone()));
+                                    *mpsc.recvd_payload.borrow_mut() = Some(Ok(update_info));
                                 });
                                 // save state regardless of content of msg
                                 self.set_last_check(Utc::now());
@@ -449,6 +448,6 @@ where
     }
 }
 
-pub(super) fn default_interval() -> i64 {
+pub(super) fn default_interval() -> u64 {
     UPDATE_INTERVAL
 }

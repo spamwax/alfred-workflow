@@ -149,7 +149,7 @@ mod releaser;
 mod tests;
 
 /// Default update interval duration (24 hrs)
-pub const UPDATE_INTERVAL: i64 = 24 * 60 * 60;
+pub const UPDATE_INTERVAL: u64 = 24 * 60 * 60;
 
 pub use self::releaser::GithubReleaser;
 pub use self::releaser::Releaser;
@@ -589,7 +589,7 @@ where
     /// # }
     /// ```
     /// [`UPDATE_INTERVAL`]: constant.UPDATE_INTERVAL.html
-    pub fn set_interval(&mut self, tick: i64) {
+    pub fn set_interval(&mut self, tick: u64) {
         self.set_update_interval(tick);
     }
 
@@ -611,7 +611,7 @@ where
     /// let mut updater = Updater::gh("spamwax/alfred-pinboard-rs")?;
     ///
     /// // Assuming it is has been UPDATE_INTERVAL seconds since last time we ran the
-    /// // `update_ready()` and there actually exists a new release:
+    /// // `update_ready()`:
     /// assert_eq!(true, updater.due_to_check());
     /// # Ok(())
     /// # }
@@ -623,7 +623,9 @@ where
     /// [`UPDATE_INTERVAL`]: constant.UPDATE_INTERVAL.html
     pub fn due_to_check(&self) -> bool {
         self.last_check().map_or(true, |dt| {
-            Utc::now().signed_duration_since(dt) > Duration::seconds(self.update_interval())
+            // TODO: limit the value of update interval in set_interval() so the following
+            //       cast to i64 doesn't return a negative value.
+            Utc::now().signed_duration_since(dt) > Duration::seconds(self.update_interval() as i64)
         })
     }
 

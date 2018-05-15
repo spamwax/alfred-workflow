@@ -193,23 +193,23 @@ pub mod tests {
     use super::*;
     use mockito::{mock, Matcher, Mock};
 
-    #[test]
-    fn it_tests_releaser() {
-        let _m = setup_mock_server(200);
-        let releaser = GithubReleaser::new(MOCK_RELEASER_REPO_NAME);
+    // #[test]
+    // fn it_tests_releaser() {
+    //     let _m = setup_mock_server(200);
+    //     let releaser = GithubReleaser::new(MOCK_RELEASER_REPO_NAME);
 
-        // Calling downloadable_url before checking for latest_version will return error
-        assert!(releaser.downloadable_url().is_err());
+    //     // Calling downloadable_url before checking for latest_version will return error
+    //     assert!(releaser.downloadable_url().is_err());
 
-        assert!(
-            releaser
-                .latest_version()
-                .expect("couldn't do latest_version") > Version::from((0, 11, 0))
-        );
+    //     assert!(
+    //         releaser
+    //             .latest_version()
+    //             .expect("couldn't do latest_version") > Version::from((0, 11, 0))
+    //     );
 
-        assert_eq!("http://127.0.0.1:1234/releases/download/v0.11.1/alfred-pinboard-rust-v0.11.1.alfredworkflow",
-                   releaser.downloadable_url().unwrap().as_str());
-    }
+    //     assert_eq!("http://127.0.0.1:1234/releases/download/v0.11.1/alfred-pinboard-rust-v0.11.1.alfredworkflow",
+    //                releaser.downloadable_url().unwrap().as_str());
+    // }
 
     pub fn setup_mock_server(status_code: usize) -> Mock {
         mock(

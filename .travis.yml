@@ -5,7 +5,8 @@ rust:
 cache: cargo
 script:
   - cargo build --features ci
-  - cargo test --features ci -- --nocapture --test-threads=1
+  - cargo test --features ci --lib -- --nocapture --test-threads=1
+  - cargo test --features ci --doc -- --nocapture
 matrix:
   allow_failures:
     - rust: nightly

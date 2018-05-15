@@ -8,18 +8,105 @@ use tempfile::Builder;
 const VERSION_TEST: &str = "0.10.5";
 const VERSION_TEST_NEW: &str = "0.11.1"; // should match what the mock server replies for new version.
 
-#[test]
-fn it_tests_settings_filename() {
-    setup_workflow_env_vars(true);
-    let updater_state_fn = Updater::<GithubReleaser>::build_data_fn().unwrap();
-    assert_eq!(
-        "workflow.B0AC54EC-601C-YouForgotTo___Name_Your_Own_Work_flow_-updater.json",
-        updater_state_fn.file_name().unwrap().to_str().unwrap()
-    );
+static MYMUTEX: bool = true;
+
+use std::sync::Mutex;
+
+lazy_static! {
+    static ref TEST_MUTEX: Mutex<()> = Mutex::new(());
 }
 
-#[test]
-fn it_ignores_saved_version_after_an_upgrade() {
+macro_rules! test {
+    (fn $name:ident() $body:block) => {
+        #[allow(unused_must_use)]
+        #[allow(deprecated)]
+        #[test]
+        fn $name() {
+            use std;
+            use std::io::Write;
+            use std::thread;
+
+            let debug = true;
+            if debug {
+                std::io::stdout().write(
+                    format!("\nabout to lock the MYMUTEX: {:?}\n", stringify!{$name}).as_ref(),
+                );
+                std::io::stdout().flush();
+                thread::sleep_ms(2000);
+            }
+            if MYMUTEX {
+                let guard = self::TEST_MUTEX.lock().unwrap();
+                if debug {
+                    std::io::stdout().write(
+                        format!("\n**** {:?} acquired the lock\n", stringify!{$name}).as_ref(),
+                    );
+                    std::io::stdout().flush();
+                    thread::sleep_ms(200);
+                }
+                if let Err(e) = std::panic::catch_unwind(|| $body) {
+                    drop(guard);
+                    std::panic::resume_unwind(e);
+                }
+                if debug {
+                    std::io::stdout().write(
+                        format!("\n----> {:?} dropped the lock\n", stringify!{$name}).as_ref(),
+                    );
+                    thread::sleep_ms(200);
+                }
+            } else {
+                $body
+            }
+        }
+    };
+    (fn $name:ident() $test_attr:meta $body:block) => {
+        #[allow(unused_must_use)]
+        #[test]
+        #[$test_attr]
+        fn $name() {
+            use std;
+            use std::io::Write;
+            let debug = false;
+            if debug {
+                std::io::stdout().write(
+                    format!("\nabout to lock the MYMUTEX: {:?}\n", stringify!{$name}).as_ref(),
+                );
+                std::io::stdout().flush();
+            }
+            if MYMUTEX {
+                let guard = self::TEST_MUTEX.lock().unwrap();
+                if debug {
+                    std::io::stdout().write(
+                        format!("\n**** {:?} acquired the lock\n", stringify!{$name}).as_ref(),
+                    );
+                    std::io::stdout().flush();
+                }
+                if let Err(e) = std::panic::catch_unwind(|| $body) {
+                    drop(guard);
+                    std::panic::resume_unwind(e);
+                }
+                if debug {
+                    std::io::stdout().write(
+                        format!("\n----> {:?} dropped the lock\n", stringify!{$name}).as_ref(),
+                    );
+                }
+            } else {
+                $body
+            }
+        }
+    };
+}
+
+// #[test]
+// fn it_tests_settings_filename() {
+//     setup_workflow_env_vars(true);
+//     let updater_state_fn = Updater::<GithubReleaser>::build_data_fn().unwrap();
+//     assert_eq!(
+//         "workflow.B0AC54EC-601C-YouForgotTo___Name_Your_Own_Work_flow_-updater.json",
+//         updater_state_fn.file_name().unwrap().to_str().unwrap()
+//     );
+// }
+
+test! { fn it_ignores_saved_version_after_an_upgrade() {
     // Make sure a freshly upgraded workflow does not use version info from saved state
     setup_workflow_env_vars(true);
     let _m = setup_mock_server(200);
@@ -49,9 +136,9 @@ fn it_ignores_saved_version_after_an_upgrade() {
         );
     }
 }
+}
 
-#[test]
-fn it_ignores_saved_version_after_an_upgrade_async() {
+test! { fn it_ignores_saved_version_after_an_upgrade_async() {
     // Make sure a freshly upgraded workflow does not use version info from saved state
     setup_workflow_env_vars(true);
     let _m = setup_mock_server(200);
@@ -84,39 +171,37 @@ fn it_ignores_saved_version_after_an_upgrade_async() {
         );
     }
 }
-
-#[test]
-#[should_panic(expected = "ClientError(BadRequest)")]
-fn it_handles_server_error() {
-    let _m = setup_mock_server(200);
-    setup_workflow_env_vars(true);
-    first_check_after_installing_workflow(false);
-
-    let mut updater = Updater::gh(MOCK_RELEASER_REPO_NAME).expect("cannot build Updater");
-    // Next check will be immediate
-    updater.set_interval(0);
-    let _m = setup_mock_server(400);
-    // This should panic with a BadRequest (400) error.
-    updater.update_ready().unwrap();
 }
 
-#[test]
-#[should_panic(expected = "ClientError(BadRequest)")]
-fn it_handles_server_error_async() {
-    setup_workflow_env_vars(true);
-    first_check_after_installing_workflow(true);
+// test!{ fn it_handles_server_error() should_panic(expected = "ClientError(BadRequest)") {
+//     let _m = setup_mock_server(200);
+//     setup_workflow_env_vars(true);
+//     first_check_after_installing_workflow(false);
 
-    let mut updater = Updater::gh(MOCK_RELEASER_REPO_NAME).expect("cannot build Updater");
-    // Next check will be immediate
-    updater.set_interval(0);
-    updater.init().expect("couldn't init worker");
-    let _m = setup_mock_server(400);
-    // This should panic with a BadRequest (400) error.
-    updater.update_ready().unwrap();
-}
+//     let mut updater = Updater::gh(MOCK_RELEASER_REPO_NAME).expect("cannot build Updater");
+//     // Next check will be immediate
+//     updater.set_interval(0);
+//     let _m = setup_mock_server(400);
+//     // This should panic with a BadRequest (400) error.
+//     updater.update_ready().unwrap();
+// }
+// }
 
-#[test]
-fn it_caches_async_workers_payload() {
+// test!{ fn it_handles_server_error_async() should_panic(expected = "ClientError(BadRequest)") {
+//     setup_workflow_env_vars(true);
+//     first_check_after_installing_workflow(true);
+
+//     let mut updater = Updater::gh(MOCK_RELEASER_REPO_NAME).expect("cannot build Updater");
+//     // Next check will be immediate
+//     updater.set_interval(0);
+//     updater.init().expect("couldn't init worker");
+//     let _m = setup_mock_server(400);
+//     // This should panic with a BadRequest (400) error.
+//     updater.update_ready().unwrap();
+// }
+// }
+
+test! { fn it_caches_async_workers_payload() {
     setup_workflow_env_vars(true);
 
     first_check_after_installing_workflow(true);
@@ -153,9 +238,9 @@ fn it_caches_async_workers_payload() {
         assert_eq!(true, updater.update_ready().is_err());
     }
 }
+}
 
-#[test]
-fn it_get_latest_info_from_releaser() {
+test! { fn it_get_latest_info_from_releaser() {
     setup_workflow_env_vars(true);
     let _m = setup_mock_server(200);
 
@@ -179,9 +264,9 @@ fn it_get_latest_info_from_releaser() {
         assert!(updater.update_ready().expect("couldn't check for update"));
     }
 }
+}
 
-#[test]
-fn it_does_one_network_call_per_interval() {
+test! { fn it_does_one_network_call_per_interval() {
     setup_workflow_env_vars(true);
     let _m = setup_mock_server(200);
 
@@ -206,9 +291,9 @@ fn it_does_one_network_call_per_interval() {
     // Make sure we stil report update is ready
     assert_eq!(true, t.unwrap());
 }
+}
 
-#[test]
-fn it_tests_download() {
+test! { fn it_tests_download() {
     setup_workflow_env_vars(true);
     let _m = setup_mock_server(200);
     first_check_after_installing_workflow(false);
@@ -238,30 +323,29 @@ fn it_tests_download() {
             .expect("impossible?!")
     );
 }
-
-#[test]
-#[should_panic(expected = "no release info")]
-fn it_doesnt_download_without_release_info() {
-    setup_workflow_env_vars(true);
-    let _m = setup_mock_server(200);
-    first_check_after_installing_workflow(true);
-
-    let updater = Updater::gh(MOCK_RELEASER_REPO_NAME).expect("cannot build Updater");
-    updater.init().expect("couldn't init worker");
-
-    assert!(updater.download_latest().is_err());
-
-    // Since check time is due yet, following will just read cache without
-    // getting any release info, hence the last line should panic
-    assert_eq!(
-        false,
-        updater.update_ready().expect("couldn't check for update")
-    );
-    updater.download_latest().unwrap();
 }
 
-#[test]
-fn it_downloads_after_getting_release_info() {
+// test! { fn it_doesnt_download_without_release_info() should_panic(expected = "no release info") {
+//     setup_workflow_env_vars(true);
+//     let _m = setup_mock_server(200);
+//     first_check_after_installing_workflow(true);
+
+//     let updater = Updater::gh(MOCK_RELEASER_REPO_NAME).expect("cannot build Updater");
+//     updater.init().expect("couldn't init worker");
+
+//     assert!(updater.download_latest().is_err());
+
+//     // Since check time is due yet, following will just read cache without
+//     // getting any release info, hence the last line should panic
+//     assert_eq!(
+//         false,
+//         updater.update_ready().expect("couldn't check for update")
+//     );
+//     updater.download_latest().unwrap();
+// }
+// }
+
+test! { fn it_downloads_after_getting_release_info() {
     setup_workflow_env_vars(true);
     let _m = setup_mock_server(200);
     first_check_after_installing_workflow(true);
@@ -277,9 +361,9 @@ fn it_downloads_after_getting_release_info() {
     );
     assert!(updater.download_latest().is_ok());
 }
+}
 
-#[test]
-fn it_tests_async_updates_1() {
+test! { fn it_tests_async_updates_1() {
     //
     setup_workflow_env_vars(true);
     let _m = setup_mock_server(200);
@@ -294,9 +378,9 @@ fn it_tests_async_updates_1() {
         updater.update_ready().expect("couldn't check for update")
     );
 }
+}
 
-#[test]
-fn it_tests_async_updates_2() {
+test! { fn it_tests_async_updates_2() {
     // This test will only spawn a thread once.
     // Second call will use a cache since it's not due to check.
     setup_workflow_env_vars(true);
@@ -320,6 +404,7 @@ fn it_tests_async_updates_2() {
         true,
         updater.update_ready().expect("couldn't check for update")
     );
+}
 }
 
 pub(super) fn setup_workflow_env_vars(secure_temp_dir: bool) -> PathBuf {

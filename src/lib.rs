@@ -39,6 +39,8 @@ extern crate mockito;
 extern crate tempfile;
 
 extern crate chrono;
+#[macro_use]
+extern crate lazy_static;
 extern crate reqwest;
 extern crate semver;
 #[macro_use]
