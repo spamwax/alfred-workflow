@@ -21,7 +21,7 @@ Next planned feature is read/write API.
 
 See [`updater`] module documentation for details and examples.
 
-[`updater`]: updater/index.html
+[`updater`]: https://docs.rs/alfred-rs/latest/alfred_rs/updater/index.html
 [alfred]: https://crates.io/crates/alfred
 [alfred.app]: http://www.alfredapp.com
 [Workflows]: https://www.alfredapp.com/workflows/
