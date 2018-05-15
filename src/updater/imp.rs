@@ -272,9 +272,10 @@ where
     /// # Example
     ///
     /// ```no_run
-    /// # extern crate alfred;
     /// # extern crate failure;
-    /// use alfred::Updater;
+    /// extern crate alfred_rs;
+    ///
+    /// use alfred_rs::Updater;
     ///
     /// # use failure::Error;
     /// # use std::io;

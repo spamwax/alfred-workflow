@@ -5,10 +5,26 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Helpers for writing Alfred script filter output
+//! Helpers for writing Alfred workflows.
+//!
+//! ## Features:
+//! - Automatic update
+//! - Read/write API for workflow data (settings, cache data, ...)
+//!
+//! This crate adds enhanced features and quality-of-life improvements to
+//! [other alfred crate][alfred]'s basic functionality of creating **Script Filter** items.
+//!
+//! # Note
+//! Currently this is the early stages of this crate.
+//!
+//! However the [`updater`] is sufficiently stable.
+//!
+//! Next planned feature is read/write API.
+//!
 //! See [`updater`] module documentation for details and examples.
 //!
 //! [`updater`]: updater/index.html
+//! [alfred]: https://crates.io/crates/alfred
 //!
 
 extern crate alfred;
@@ -21,24 +37,17 @@ extern crate mockito;
 #[cfg(test)]
 extern crate tempfile;
 
-#[cfg(feature = "updater")]
 extern crate chrono;
-#[cfg(feature = "updater")]
 extern crate reqwest;
-#[cfg(feature = "updater")]
 extern crate semver;
-#[cfg(feature = "updater")]
 #[macro_use]
 extern crate serde_derive;
-#[cfg(feature = "updater")]
 extern crate time;
-#[cfg(feature = "updater")]
 extern crate url;
-#[cfg(feature = "updater")]
 extern crate url_serde;
 
-#[cfg(feature = "updater")]
+use alfred::env;
+
 pub mod updater;
 
-#[cfg(feature = "updater")]
 pub use self::updater::Updater;

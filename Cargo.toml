@@ -10,7 +10,7 @@ https://www.alfredapp.com
 """
 
 documentation = "https://docs.rs/alfred-rs/"
-homepatge = "https://github.com/spamwax/alfred-workflow"
+homepage = "https://github.com/spamwax/alfred-workflow"
 repository = "https://github.com/spamwax/alfred-workflow"
 
 keywords = ["alfred", "workflow", "updater"]
@@ -41,7 +41,7 @@ tempfile = "^3.0"
 mockito = "0.9"
 
 [features]
-default = []
+default = ["updater"]
 updater = ["chrono", "reqwest", "semver", "time", "url", "url_serde"]
 
 # are we testing on CI?

@@ -213,7 +213,7 @@ pub mod tests {
             Matcher::Regex(r"^/releases/(latest|download).*$".to_string()),
         ).with_status(status_code)
             .with_header("content-type", "application/json")
-            .with_body(include_str!("../../res/latest.json"))
+            .with_body(include_str!("../../tests/latest.json"))
             .create()
     }
 }

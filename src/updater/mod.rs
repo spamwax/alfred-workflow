@@ -3,7 +3,7 @@
 //! Enable this feature by adding it to your `Cargo.toml`:
 //!
 //! ```toml
-//! alfred = { version = "4", features = ["updater"] }
+//! alfred_rs = { version = "0.2", features = ["updater"] }
 //! ```
 //! Using this module, the workflow author can make Alfred check for latest releases from a remote
 //! server within adjustable intervals ([`try_update_ready()`] or [`update_ready()`])
@@ -62,9 +62,14 @@
 //! To change the interval, use [`set_interval()`] method.
 //!
 //! ```rust,no_run
-//! # extern crate alfred;
 //! # extern crate failure;
-//! use alfred::{Item, ItemBuilder, Updater, json};
+//! extern crate alfred;
+//!
+//! // This crate
+//! extern crate alfred_rs;
+//!
+//! use alfred::{Item, ItemBuilder, json};
+//! use alfred_rs::Updater;
 //!
 //! # use std::io;
 //! # use failure::Error;
@@ -167,8 +172,9 @@ impl Updater<GithubReleaser> {
     /// [module level documentation](./index.html) for full example and description.
     ///
     /// ```rust
-    /// # extern crate alfred;
-    /// use alfred::Updater;
+    /// # extern crate alfred_rs;
+    /// use alfred_rs::Updater;
+    ///
     /// # use std::env;
     /// # fn main() {
     /// # env::set_var("alfred_workflow_uid", "abcdef");
@@ -218,7 +224,7 @@ where
     /// # Example
     ///
     /// ```rust,no_run
-    /// # extern crate alfred;
+    /// # extern crate alfred_rs;
     /// # extern crate semver;
     /// # extern crate failure;
     /// # extern crate url;
@@ -226,8 +232,8 @@ where
     /// use url::Url;
     /// use semver::Version;
     ///
-    /// use alfred::Updater;
-    /// use alfred::updater::Releaser;
+    /// use alfred_rs::Updater;
+    /// use alfred_rs::updater::Releaser;
     /// # use std::env;
     /// # use failure::Error;
     /// # fn main() {
@@ -303,10 +309,10 @@ where
     /// # Example
     ///
     /// ```rust,no_run
-    /// # extern crate alfred;
+    /// # extern crate alfred_rs;
     /// # extern crate failure;
     /// # use failure::Error;
-    /// # use alfred::Updater;
+    /// # use alfred_rs::Updater;
     /// # use std::env;
     /// # fn do_some_other_stuff() {}
     /// # fn test_async() -> Result<(), Error> {
@@ -415,9 +421,9 @@ where
     /// # Example
     ///
     /// ```no_run
-    /// # extern crate alfred;
+    /// # extern crate alfred_rs;
     /// # extern crate failure;
-    /// use alfred::Updater;
+    /// use alfred_rs::Updater;
     ///
     /// # use failure::Error;
     /// # use std::io;
@@ -475,10 +481,10 @@ where
     /// # Example
     ///
     /// ```no_run
-    /// extern crate alfred;
+    /// extern crate alfred_rs;
     /// # extern crate failure;
     ///
-    /// use alfred::Updater;
+    /// use alfred_rs::Updater;
     ///
     /// # use failure::Error;
     /// # use std::io;
@@ -529,9 +535,9 @@ where
     /// # Example
     ///
     /// ```rust
-    /// # extern crate alfred;
+    /// # extern crate alfred_rs;
     /// # extern crate failure;
-    /// # use alfred::Updater;
+    /// # use alfred_rs::Updater;
     /// # use std::env;
     /// # use failure::Error;
     /// # fn ex_set_version() -> Result<(), Error> {
@@ -569,8 +575,8 @@ where
     /// Set interval to be 7 days
     ///
     /// ```rust
-    /// # extern crate alfred;
-    /// # use alfred::Updater;
+    /// # extern crate alfred_rs;
+    /// # use alfred_rs::Updater;
     /// # use std::env;
     /// # fn main() {
     /// # env::set_var("alfred_workflow_uid", "abcdef");
@@ -596,9 +602,9 @@ where
     /// # Example
     ///
     /// ```rust,no_run
-    /// # extern crate alfred;
+    /// # extern crate alfred_rs;
     /// # extern crate failure;
-    /// # use alfred::Updater;
+    /// # use alfred_rs::Updater;
     /// # use failure::Error;
     /// # fn run() -> Result<(), Error> {
     /// let mut updater = Updater::gh("spamwax/alfred-pinboard-rs")?;
@@ -654,9 +660,10 @@ where
     ///
     /// ```rust,no_run
     /// # extern crate alfred;
+    /// # extern crate alfred_rs;
     /// # extern crate failure;
-    /// # use alfred::Updater;
     /// # use std::io;
+    /// use alfred_rs::Updater;
     /// use alfred::{ItemBuilder, json};
     ///
     /// # fn main() {
