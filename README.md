@@ -6,7 +6,7 @@
 Helpers for writing [Alfred][alfred.app] [Workflows][] with features such as:
 
 Features:
-- Automatic update
+- Self automatic update of workflows using this crate.
 - Read/write API for workflow data (settings, cache data, ...)
 
 This crate adds enhanced features and quality-of-life improvements to

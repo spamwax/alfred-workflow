@@ -24,7 +24,7 @@
 //! This can be done by tagging a commit and then manually building a release where you
 //! attach/upload `YourWorkflow.alfredworkflow` to the release page.
 //!
-//! The tag should follow all the [semantic versioning] rules.
+//! The tag should follow all of the [semantic versioning] rules.
 //! The only exception to those rules is that you can prepend your
 //! semantic version tag with ASCII letter `v`: `v0.3.1` or `0.3.1`
 //!
@@ -104,6 +104,7 @@
 //!             let update_item = ItemBuilder::new(
 //!                 "New version is available!"
 //!             ).into_item();
+//!             // Add a new item to previous list of Items
 //!             items.push(update_item);
 //!         }
 //!     } else {
@@ -626,7 +627,7 @@ where
         })
     }
 
-    /// Function to download and save the latest release into workflow's cache dir.
+    /// Method to download and save the latest release into workflow's cache dir.
     ///
     /// If the download and save operations are both successful, it returns name of file in which the
     /// downloaded Alfred workflow bundle is saved.
@@ -638,7 +639,7 @@ where
     ///
     /// Within shell, it can be installed by issuing something like:
     /// ```bash
-    /// open -b com.runningwithcrayons.Alfred-3 latest_release_WORKFLOW-UID.alfredworkflow
+    /// open -b com.runningwithcrayons.Alfred-3 latest_release_WORKFLOW-NAME.alfredworkflow
     /// ```
     ///
     /// Or you can add "Run script" object to your workflow and use environment variables set by
@@ -704,7 +705,6 @@ where
     ///
     /// [`Releaser`]: trait.Releaser.html
     pub fn download_latest(&self) -> Result<PathBuf, Error> {
-        // let url = self.releaser.borrow().downloadable_url()?;
         let url = self.state
             .download_url()
             .ok_or(err_msg("no release info avail yet"))?;
@@ -717,16 +717,17 @@ where
             .map_err(|e| e.into())
             .and_then(|mut resp| {
                 // Get workflow's dedicated cache folder & build a filename
+                let workflow_name = env::workflow_name()
+                    .unwrap_or_else(|| "WhyUNoNameYourOwnWorkflow".to_string())
+                    .chars()
+                    .map(|c| if c.is_ascii_alphanumeric() { c } else { '_' })
+                    .collect::<String>();
                 let latest_release_downloaded_fn = env::workflow_cache()
                     .ok_or_else(|| err_msg("missing env variable for cache dir"))
                     .and_then(|mut cache_dir| {
-                        env::workflow_uid()
-                            .ok_or_else(|| err_msg("missing env variable for uid"))
-                            .and_then(|ref uid| {
-                                cache_dir
-                                    .push(["latest_release_", uid, ".alfredworkflow"].concat());
-                                Ok(cache_dir)
-                            })
+                        cache_dir
+                            .push(["latest_release_", &workflow_name, ".alfredworkflow"].concat());
+                        Ok(cache_dir)
                     })?;
                 // Save the file
                 File::create(&latest_release_downloaded_fn)

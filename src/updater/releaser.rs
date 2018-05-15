@@ -62,6 +62,10 @@ pub trait Releaser: Clone {
 /// This implementation of `Releaser` will favor files that end with `alfred3workflow`
 /// over `alfredworkflow`. If there are multiple `alfred3workflow`s or `alfredworkflow`s, the first
 /// one returned by `github.com` will be used.
+///
+/// See [`updater::gh()`] for how to use this.
+///
+/// [`updater::gh()`]: struct.Updater.html#method.gh
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GithubReleaser {
     repo: String,

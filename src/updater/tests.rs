@@ -219,8 +219,24 @@ fn it_tests_download() {
     updater.set_interval(0);
     // Force current version to be really old.
     updater.set_version("0.0.1");
-    assert!(updater.update_ready().expect("couldn't check for update"));
-    assert!(updater.download_latest().is_ok());
+
+    // New update is available
+    assert_eq!(
+        true,
+        updater.update_ready().expect("couldn't check for update")
+    );
+
+    let download_fn = updater.download_latest();
+    assert!(download_fn.is_ok());
+    assert_eq!(
+        "latest_release_YouForgotTo___Name_Your_Own_Work_flow_.alfredworkflow",
+        download_fn
+            .unwrap()
+            .file_name()
+            .expect("couldn't get download file name")
+            .to_str()
+            .expect("impossible?!")
+    );
 }
 
 #[test]
