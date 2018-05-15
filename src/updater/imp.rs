@@ -385,8 +385,7 @@ where
                                 let msg_status = msg.map(|update_info| {
                                     // received good messag, update cache for received payload
                                     *self.state.avail_release.borrow_mut() = update_info.clone();
-                                    *mpsc.recvd_payload.borrow_mut() =
-                                        Some(Ok(update_info.clone()));
+                                    *mpsc.recvd_payload.borrow_mut() = Some(Ok(update_info));
                                 });
                                 // save state regardless of content of msg
                                 self.set_last_check(Utc::now());

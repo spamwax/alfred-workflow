@@ -8,25 +8,17 @@
 //! Helpers for writing Alfred workflows.
 //!
 //! ## Features:
-//! - Self automatic update of workflows using this crate.
-//! - Read/write API for workflow data (settings, cache data, ...)
+//! - Self automatic update of workflows using this crate ([`updater`]).
+//! - Read/write API for workflow data (settings, cache data, ...) ([`data`]).
 //!
 //! This crate adds enhanced features and quality-of-life improvements to
 //! [other alfred crate][alfred]'s basic functionality of creating **Script Filter** items.
 //!
-//! # Note
-//! Currently this is the early stages of this crate.
-//!
-//! However the [`updater`] is sufficiently stable.
-//!
-//! Next planned feature is read/write API.
-//!
-//! See [`updater`] module documentation for details and examples.
-//!
 //! [`updater`]: updater/index.html
+//! [`data`]: data/index.html
 //! [alfred]: https://crates.io/crates/alfred
 //!
-#![doc(html_root_url = "https://docs.rs/alfred-rs/0.2.1")]
+#![doc(html_root_url = "https://docs.rs/alfred-rs/0.3.1")]
 
 extern crate alfred;
 extern crate failure;
@@ -48,7 +40,11 @@ extern crate url;
 extern crate url_serde;
 
 use alfred::env;
+use failure::err_msg;
+use failure::Error;
 
+pub mod data;
 pub mod updater;
 
+pub use self::data::Data;
 pub use self::updater::Updater;

@@ -633,7 +633,7 @@ where
     /// downloaded Alfred workflow bundle is saved.
     ///
     /// The downloaded workflow will be saved in dedicated cache folder of the workflow, and it
-    /// will be always renamed to `latest_release_WORKFLOW-UID.alfredworkflow`
+    /// will be always renamed to `latest_release_WORKFLOW-NAME.alfredworkflow`
     ///
     /// To install the downloaded release, your workflow needs to somehow open the saved file.
     ///
@@ -645,7 +645,7 @@ where
     /// Or you can add "Run script" object to your workflow and use environment variables set by
     /// Alfred to automatically open the downloaded release:
     /// ```bash
-    /// open -b com.runningwithcrayons.Alfred-3 "$alfred_workflow_cache/latest_release_$alfred_workflow_uid.alfredworkflow"
+    /// open -b com.runningwithcrayons.Alfred-3 "$alfred_workflow_cache/latest_release_$alfred_workflow_name.alfredworkflow"
     /// ```
     ///
     /// # Note
