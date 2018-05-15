@@ -633,7 +633,7 @@ where
     /// downloaded Alfred workflow bundle is saved.
     ///
     /// The downloaded workflow will be saved in dedicated cache folder of the workflow, and it
-    /// will be always renamed to `latest_release_WORKFLOW-UID.alfredworkflow`
+    /// will be always renamed to `latest_release_WORKFLOW-NAME.alfredworkflow`
     ///
     /// To install the downloaded release, your workflow needs to somehow open the saved file.
     ///
