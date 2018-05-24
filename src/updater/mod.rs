@@ -130,12 +130,11 @@ use env;
 use failure::{err_msg, Error};
 use reqwest;
 use semver::Version;
-use serde_json;
 use std::cell::Cell;
 use std::cell::RefCell;
 use std::env as StdEnv;
-use std::fs::{create_dir_all, remove_file, File};
-use std::io::{BufReader, BufWriter};
+use std::fs::{remove_file, File};
+use std::io::BufWriter;
 use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
 use time::Duration;
@@ -153,9 +152,6 @@ pub const UPDATE_INTERVAL: i64 = 24 * 60 * 60;
 
 pub use self::releaser::GithubReleaser;
 pub use self::releaser::Releaser;
-
-// TODO: Update Releaser trait so we don't need two methods (lastest_version and downloadable_url)
-//     Only one method (latest_release?) should return both version and a download url.
 
 /// Struct to check for & download the latest release of workflow from a remote server.
 pub struct Updater<T>
@@ -180,6 +176,7 @@ impl Updater<GithubReleaser> {
     /// # fn main() {
     /// # env::set_var("alfred_workflow_uid", "abcdef");
     /// # env::set_var("alfred_workflow_data", env::temp_dir());
+    /// # env::set_var("alfred_workflow_cache", env::temp_dir());
     /// # env::set_var("alfred_workflow_version", "0.0.0");
     /// let updater = Updater::gh("spamwax/alfred-pinboard-rs").expect("cannot initiate Updater");
     /// # }
@@ -403,7 +400,7 @@ where
     ///
     /// This method will wait for worker thread (spawned by calling [`init()`]) to deliver release
     /// information from remote server.
-    /// Upon successfull retreival, this method will compare release information to the current
+    /// Upon successful retrieval, this method will compare release information to the current
     /// vertion of the workflow. The remote repository should tag each release according to semantic
     /// version scheme for this to work.
     ///
@@ -445,7 +442,7 @@ where
     /// - If worker thread has been interrupted
     /// - If [`init()`] method has not been called successfully before this method
     /// - If worker could not communicate with server
-    /// - If any file error or Alferd environment variable error happens
+    /// - If any file error or Alfred environment variable error happens
     ///
     /// [`init()`]: struct.Updater.html#method.init
     /// [`try_update_ready()`]: struct.Updater.html#method.try_update_ready
@@ -461,7 +458,7 @@ where
     /// Try to get release info from background worker and see if a new update is available (non-blocking).
     ///
     /// This method will attempt to receive release information from worker thread
-    /// (spawned by calling [`init()`]). Upon successfull retreival, this method will compare
+    /// (spawned by calling [`init()`]). Upon successful retrieval, this method will compare
     /// release information to the current vertion of the workflow.
     /// The remote repository should tag each release according to semantic version scheme
     /// for this to work.
@@ -512,7 +509,7 @@ where
     /// - If worker thread is not ready to send information or it has been interrupted
     /// - If [`init()`] method has not been called successfully before this method
     /// - If worker could not communicate with server
-    /// - If any file error or Alferd environment variable error happens
+    /// - If any file error or Alfred environment variable error happens
     ///
     /// [`init()`]: struct.Updater.html#method.init
     /// [`update_ready()`]: struct.Updater.html#method.update_ready
@@ -582,6 +579,7 @@ where
     /// # fn main() {
     /// # env::set_var("alfred_workflow_uid", "abcdef");
     /// # env::set_var("alfred_workflow_data", env::temp_dir());
+    /// # env::set_var("alfred_workflow_cache", env::temp_dir());
     /// # env::set_var("alfred_workflow_version", "0.0.0");
     /// let mut updater =
     ///     Updater::gh("spamwax/alfred-pinboard-rs").expect("cannot initiate Updater");
@@ -723,7 +721,11 @@ where
                     .map(|c| if c.is_ascii_alphanumeric() { c } else { '_' })
                     .collect::<String>();
                 let latest_release_downloaded_fn = env::workflow_cache()
-                    .ok_or_else(|| err_msg("missing env variable for cache dir"))
+                    .ok_or_else(|| {
+                        err_msg(
+                            "missing env variable for cache dir. forgot to set workflow bundle id?",
+                        )
+                    })
                     .and_then(|mut cache_dir| {
                         cache_dir
                             .push(["latest_release_", &workflow_name, ".alfredworkflow"].concat());

@@ -121,7 +121,7 @@ impl Data {
     /// # use chrono::prelude::*;
     /// use alfred_rs::data::Data;
     ///
-    /// Data::save_to_file("cached_tags.dat", vec!["rust", "alfred"]).unwrap();
+    /// Data::save_to_file("cached_tags.dat", &vec!["rust", "alfred"]).unwrap();
     /// ```
     /// ## Note
     /// Only the [`file_name`] portion of `p` will be used to name the file in
@@ -132,7 +132,7 @@ impl Data {
     /// [`set`]: struct.Data.html#method.set
     /// [`get`]: struct.Data.html#method.get
     /// [`file_name`]: https://doc.rust-lang.org/std/path/struct.Path.html#method.file_name
-    pub fn save_to_file<P, V>(p: P, data: V) -> Result<(), Error>
+    pub fn save_to_file<P, V>(p: P, data: &V) -> Result<(), Error>
     where
         P: AsRef<Path>,
         V: Serialize,
@@ -142,10 +142,12 @@ impl Data {
             .ok_or_else(|| err_msg("invalid file name"))?;
         let p = env::workflow_cache()
             .map(|wfc| wfc.join(filename))
-            .ok_or_else(|| err_msg("missing alfred workflow env for cache folder"))?;
+            .ok_or_else(|| {
+                err_msg("missing env variable for cache dir. forgot to set workflow bundle id?")
+            })?;
         File::create(p).map_err(|e| e.into()).and_then(|fp| {
             let buf_writer = BufWriter::with_capacity(0x1000, fp);
-            serde_json::to_writer(buf_writer, &data)?;
+            serde_json::to_writer(buf_writer, data)?;
             Ok(())
         })
     }
@@ -173,6 +175,7 @@ impl Data {
     ///
     /// [`set`]: struct.Data.html#method.set
     /// [`get`]: struct.Data.html#method.get
+    /// [`file_name`]: https://doc.rust-lang.org/std/path/struct.Path.html#method.file_name
     pub fn load_from_file<P, V>(p: P) -> Option<V>
     where
         P: AsRef<Path>,
@@ -193,7 +196,9 @@ impl Data {
 
     fn read_data_from_disk() -> Result<Self, Error> {
         env::workflow_data()
-            .ok_or_else(|| err_msg("missing env variable for data dir"))
+            .ok_or_else(|| {
+                err_msg("missing env variable for data dir. forgot to set workflow bundle id?")
+            })
             .and_then(|wf_data_path| {
                 let workflow_name = env::workflow_uid()
                     .map(|ref uid| [uid, "-persistent-data.json"].concat())
@@ -210,24 +215,28 @@ impl Data {
     }
 
     fn save_data_to_disk(&self) -> Result<(), Error> {
-        // TODO: Use a temp file for saving and then rename it to wf_data_fn.
-        //       This prevents corruption of data if workflow is cancelled abruptly.
         env::workflow_data()
-            .ok_or_else(|| err_msg("missing alfred workflow env for data folder"))
+            .ok_or_else(|| {
+                err_msg("missing env variable for data dir. forgot to set workflow bundle id?")
+            })
             .and_then(|wf_data_path| {
+                // Write to a temp file first
+                let wf_data_fn_temp = wf_data_path.join("temp_persistent-data.json");
+                File::create(&wf_data_fn_temp).and_then(|fp| {
+                    let buf_writer = BufWriter::with_capacity(0x1000, fp);
+                    serde_json::to_writer(buf_writer, &self)?;
+                    Ok(())
+                })?;
+
+                // Rename over to main file name
                 let workflow_name = env::workflow_uid()
                     .map(|ref uid| [uid, "-persistent-data.json"].concat())
                     .unwrap_or("unnamed_workflow".to_string());
                 let wf_data_fn = wf_data_path.join(workflow_name);
-                File::create(wf_data_fn)
-                    .map_err(|e| e.into())
-                    .and_then(|fp| {
-                        let buf_writer = BufWriter::with_capacity(0x1000, fp);
-                        serde_json::to_writer(buf_writer, &self)?;
-                        Ok(())
-                    })
-            })?;
-        Ok(())
+                use std::fs;
+                fs::rename(wf_data_fn_temp, wf_data_fn)?;
+                Ok(())
+            })
     }
 }
 
@@ -285,7 +294,7 @@ mod tests {
         let _ = remove_file(&path);
 
         let now = Utc::now();
-        Data::save_to_file(&path, now).expect("couldn't write to file");
+        Data::save_to_file(&path, &now).expect("couldn't write to file");
         let what_now: DateTime<Utc> =
             Data::load_from_file(path).expect("couldn't get value from test file");
         assert_eq!(now, what_now);

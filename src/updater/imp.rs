@@ -48,7 +48,7 @@ pub(super) struct UpdateInfo {
     // Latest version available from github or releaser
     version: Version,
 
-    // Like to use to download the above version
+    // Link to use to download the above version
     #[serde(with = "url_serde")]
     downloadable_url: Url,
 }
@@ -135,33 +135,18 @@ where
     }
 
     fn load() -> Result<UpdaterState, Error> {
-        Self::build_data_fn().and_then(|data_file_path| {
-            if data_file_path.exists() {
-                Ok(File::open(data_file_path).and_then(|fp| {
-                    let buf_reader = BufReader::with_capacity(128, fp);
-                    Ok(serde_json::from_reader(buf_reader)?)
-                })?)
-            } else {
-                Err(err_msg("missing updater data file"))
-            }
-        })
+        let data_file_path = Self::build_data_fn()?;
+        ::Data::load_from_file(data_file_path)
+            .ok_or_else(|| err_msg("cannot load cached state of updater"))
     }
 
+    // Save updater's state
     pub(super) fn save(&self) -> Result<(), Error> {
-        let data_file_path = Self::build_data_fn().and_then(|data_file_path| {
-            create_dir_all(data_file_path.parent().unwrap())?;
-            Ok(data_file_path)
-        })?;
-        File::create(&data_file_path)
-            .and_then(|fp| {
-                let buf_writer = BufWriter::with_capacity(128, fp);
-                serde_json::to_writer(buf_writer, &self.state)?;
-                Ok(())
-            })
-            .or_else(|e| {
-                let _ = remove_file(data_file_path);
-                Err(e.into())
-            })
+        let data_file_path = Self::build_data_fn()?;
+        ::Data::save_to_file(&data_file_path, &self.state).or_else(|e| {
+            let _ = remove_file(data_file_path);
+            Err(e.into())
+        })
     }
 
     pub(super) fn start_releaser_worker(
@@ -204,26 +189,15 @@ where
         p: &PathBuf,
         updater_info: &Option<UpdateInfo>,
     ) -> Result<(), Error> {
-        File::create(p)
-            .and_then(|fp| {
-                let buf_writer = BufWriter::with_capacity(128, fp);
-                serde_json::to_writer(buf_writer, updater_info)?;
-                Ok(())
-            })
-            .or_else(|e| {
-                let _ = remove_file(p);
-                Err(e)
-            })?;
-        Ok(())
+        ::Data::save_to_file(p, updater_info).or_else(|e| {
+            let _ = remove_file(p);
+            Err(e)
+        })
     }
 
     // read version of latest avail. release (if any) from a cache file
     pub(super) fn read_last_check_status(p: &PathBuf) -> Result<Option<UpdateInfo>, Error> {
-        Ok(File::open(p).and_then(|fp| {
-            let buf_reader = BufReader::with_capacity(128, fp);
-            let v = serde_json::from_reader(buf_reader)?;
-            Ok(v)
-        })?)
+        ::Data::load_from_file(p).ok_or_else(|| err_msg("no data in given path"))
     }
 
     pub(super) fn build_data_fn() -> Result<PathBuf, Error> {
@@ -233,8 +207,10 @@ where
             .map(|c| if c.is_ascii_alphanumeric() { c } else { '_' })
             .collect::<String>();
 
-        env::workflow_data()
-            .ok_or_else(|| err_msg("missing env variable for data dir"))
+        env::workflow_cache()
+            .ok_or_else(|| {
+                err_msg("missing env variable for cache dir. forgot to set workflow bundle id?")
+            })
             .and_then(|mut data_path| {
                 env::workflow_uid()
                     .ok_or_else(|| err_msg("missing env variable for uid"))
