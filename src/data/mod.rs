@@ -11,11 +11,32 @@
 //! To save/load temporary data, use [`save_to_file()`] and [`load_from_file()`] functions.
 //! Example of such data are cached list of items related to workflow or a downloaded file to be used later.
 //!
+//! # Example
+//! ```rust,no_run
+//! # extern crate alfred_rs;
+//! extern crate chrono;
+//! # use chrono::prelude::*;
+//! use alfred_rs::data::Data;
+//!
+//! // Load the workflow data (or create a new one)
+//! let mut workflow_data = Data::load().unwrap();
+//!
+//! // Set **and** save key/value `user_id: 0xFF` pair
+//! workflow_data.set("user_id", 0xFF);
+//!
+//! // We can set/save different data types.
+//! // Set and save last time user updated a cache
+//! workflow_data.set("last_cache_update", Utc::now());
+//! ```
+//!
+//! See `Data`'s [documentation] for more examples.
+//!
 //! [`load()`]: struct.Data.html#method.load
 //! [`set()`]: struct.Data.html#method.set
 //! [`get()`]: struct.Data.html#method.get
 //! [`save_to_file()`]: struct.Data.html#method.save_to_file
 //! [`load_from_file()`]: struct.Data.html#method.load_from_file
+//! [documentation]: struct.Data.html
 use super::*;
 
 use serde::Deserialize;
@@ -41,9 +62,11 @@ impl Data {
     /// # Errors:
     /// This method can fail if any disk/IO error happens.
     pub fn load() -> Result<Self, Error> {
-        Self::read_data_from_disk().or(Ok(Data {
-            inner: HashMap::new(),
-        }))
+        Self::read_data_from_disk().or_else(|_| {
+            Ok(Data {
+                inner: HashMap::new(),
+            })
+        })
     }
 
     /// Set the value of key `k` to `v` and persist it to disk
@@ -137,7 +160,8 @@ impl Data {
         P: AsRef<Path>,
         V: Serialize,
     {
-        let filename = p.as_ref()
+        let filename = p
+            .as_ref()
             .file_name()
             .ok_or_else(|| err_msg("invalid file name"))?;
         let p = env::workflow_cache()
@@ -202,7 +226,7 @@ impl Data {
             .and_then(|wf_data_path| {
                 let workflow_name = env::workflow_uid()
                     .map(|ref uid| [uid, "-persistent-data.json"].concat())
-                    .unwrap_or("unnamed_workflow".to_string());
+                    .unwrap_or_else(|| "unnamed_workflow".to_string());
                 let wf_data_fn = wf_data_path.join(workflow_name);
                 File::open(wf_data_fn).map_err(|e| e.into()).and_then(|fp| {
                     let mut buf_reader = BufReader::with_capacity(0x1000, fp);
@@ -231,7 +255,7 @@ impl Data {
                 // Rename over to main file name
                 let workflow_name = env::workflow_uid()
                     .map(|ref uid| [uid, "-persistent-data.json"].concat())
-                    .unwrap_or("unnamed_workflow".to_string());
+                    .unwrap_or_else(|| "unnamed_workflow".to_string());
                 let wf_data_fn = wf_data_path.join(workflow_name);
                 use std::fs;
                 fs::rename(wf_data_fn_temp, wf_data_fn)?;
@@ -304,7 +328,7 @@ mod tests {
         // Mimic Alfred's environment variables
         let path = if secure_temp_dir {
             Builder::new()
-                .prefix("alfred_rs_test")
+                .prefix("alfred_workflow_test")
                 .rand_bytes(5)
                 .tempdir()
                 .unwrap()

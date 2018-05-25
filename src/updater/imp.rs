@@ -27,11 +27,11 @@ impl UpdaterState {
         self.current_version = v;
     }
 
-    pub(super) fn borrow_worker<'a>(&'a self) -> Ref<'a, Option<MPSCState>> {
+    pub(super) fn borrow_worker(&self) -> Ref<'_, Option<MPSCState>> {
         self.worker_state.borrow()
     }
 
-    pub(super) fn borrow_worker_mut<'a>(&'a self) -> RefMut<'a, Option<MPSCState>> {
+    pub(super) fn borrow_worker_mut(&self) -> RefMut<'_, Option<MPSCState>> {
         self.worker_state.borrow_mut()
     }
 
@@ -145,7 +145,7 @@ where
         let data_file_path = Self::build_data_fn()?;
         ::Data::save_to_file(&data_file_path, &self.state).or_else(|e| {
             let _ = remove_file(data_file_path);
-            Err(e.into())
+            Err(e)
         })
     }
 
@@ -294,7 +294,7 @@ where
         // save the result of call to cache file.
         let ask_releaser_for_update = || -> Result<bool, Error> {
             let (v, url) = self.releaser.borrow().latest_release()?;
-            let update_avail = self.current_version() < &v;
+            let update_avail = *self.current_version() < v;
 
             let payload = {
                 let info = UpdateInfo {
@@ -323,13 +323,7 @@ where
             Self::read_last_check_status(&p)
                 .map(|last_check_status| {
                     last_check_status
-                        .map(|last_update_info| {
-                            if self.current_version() < &last_update_info.version {
-                                true
-                            } else {
-                                false
-                            }
-                        })
+                        .map(|last_update_info| *self.current_version() < last_update_info.version)
                         .unwrap_or(false)
                 })
                 .or(Ok(false))
@@ -341,14 +335,14 @@ where
             .worker_state
             .borrow()
             .as_ref()
-            .ok_or(err_msg("you need to use init() metheod first."))
+            .ok_or_else(|| err_msg("you need to use init() method first."))
             .and_then(|mpsc| {
                 if mpsc.recvd_payload.borrow().is_none() {
                     // No payload received yet, try to talk to worker thread
                     mpsc.rx
                         .borrow()
                         .as_ref()
-                        .ok_or(err_msg("you need to use init() correctly!"))
+                        .ok_or_else(|| err_msg("you need to use init() correctly!"))
                         .and_then(|rx| {
                             let rr = if try_flag {
                                 // don't block while trying to receive
@@ -359,30 +353,26 @@ where
                             };
                             rr.and_then(|msg| {
                                 let msg_status = msg.map(|update_info| {
-                                    // received good messag, update cache for received payload
+                                    // received good message, update cache for received payload
                                     *self.state.avail_release.borrow_mut() = update_info.clone();
                                     *mpsc.recvd_payload.borrow_mut() = Some(Ok(update_info));
                                 });
                                 // save state regardless of content of msg
                                 self.set_last_check(Utc::now());
                                 self.save()?;
-                                Ok(msg_status?)
+                                msg_status?;
+                                Ok(())
                             })
                         })?;
                 }
                 Ok(())
             })?;
-        Ok(self.state
+        Ok(self
+            .state
             .avail_release
             .borrow()
             .as_ref()
-            .map(|release| {
-                if self.current_version() < &release.version {
-                    true
-                } else {
-                    false
-                }
-            })
+            .map(|release| *self.current_version() < release.version)
             .unwrap_or(false))
     }
 
@@ -414,12 +404,14 @@ where
                 return Err(err_msg(format!("{:?}", rr)));
             }
         }
-        if self.state.avail_release.borrow().is_some()
-            && self.current_version() < &self.state.avail_release.borrow().as_ref().unwrap().version
-        {
-            return Ok(true);
+        if let Some(ref updater_info) = *self.state.avail_release.borrow() {
+            if *self.current_version() < updater_info.version {
+                Ok(true)
+            } else {
+                Ok(false)
+            }
         } else {
-            return Ok(false);
+            Ok(false)
         }
     }
 }

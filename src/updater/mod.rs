@@ -1,16 +1,11 @@
 //! Helper for enabling Alfred workflows to upgrade themselves periodically (Alfred 3)
 //!
-//! Enable this feature by adding it to your `Cargo.toml`:
-//!
-//! ```toml
-//! alfred_rs = { version = "0.2", features = ["updater"] }
-//! ```
-//! Using this module, the workflow author can make Alfred check for latest releases from a remote
-//! server within adjustable intervals ([`try_update_ready()`] or [`update_ready()`])
+//! Using this module, the workflow author can make Alfred check for latest releases
+//! ([`try_update_ready()`] or [`update_ready()`]) from a remote server within adjustable intervals
 //! (default is 24 hrs).
 //!
 //! Additionally they can ask Alfred to download the new release to its cache folder for further
-//! action [`download_latest()`].
+//! action: [`download_latest()`].
 //!
 //! For convenience, an associated method [`Updater::gh()`] is available to check
 //! for workflows hosted on `github.com`.
@@ -20,18 +15,18 @@
 //! See [`Updater::new()`] documentation if you are hosting your workflow
 //! on a non `github.com` service.
 //!
-//! The `github.com` hosted repository should have release items following `github`'s process.
+//! ## Notes:
+//! - The `github.com` hosted repository should have release items following `github`'s process.
 //! This can be done by tagging a commit and then manually building a release where you
 //! attach/upload `YourWorkflow.alfredworkflow` to the release page.
-//!
-//! The tag should follow all of the [semantic versioning] rules.
-//! The only exception to those rules is that you can prepend your
-//! semantic version tag with ASCII letter `v`: `v0.3.1` or `0.3.1`
-//!
 //! You can easily create `YourWorkflow.alfredworkflow` file by using the [export feature] of
 //! Alfred in its preferences window.
 //!
-//! ## Note to workflow authors
+//! - The tag should follow all of the [semantic versioning] rules.
+//! The only exception to those rules is that you can prepend your
+//! semantic version tag with ASCII letter `v`: `v0.3.1` or `0.3.1`
+//!
+//! # Note to workflow authors
 //! - Depending on network quality, checking if an update is available may take a long time.
 //! This module may spawn a worker thread so that the check does not block the main flow of your plugin.
 //! However given the limitations of Alfred's plugin architecture, the worker thread cannot outlive
@@ -703,9 +698,10 @@ where
     ///
     /// [`Releaser`]: trait.Releaser.html
     pub fn download_latest(&self) -> Result<PathBuf, Error> {
-        let url = self.state
+        let url = self
+            .state
             .download_url()
-            .ok_or(err_msg("no release info avail yet"))?;
+            .ok_or_else(|| err_msg("no release info avail yet"))?;
         let client = reqwest::Client::new();
 
         client

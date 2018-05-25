@@ -31,7 +31,7 @@ pub trait Releaser: Clone {
     /// Type that represents a url to the latest release resource.
     type DownloadLink: Into<Url>;
 
-    /// Creates a new `Releser` instance that is identified as `name`
+    /// Creates a new `Releaser` instance that is identified as `name`
     fn new<S: Into<String>>(name: S) -> Self;
 
     /// Performs necessary communications to obtain release info in form of

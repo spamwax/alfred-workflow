@@ -130,7 +130,7 @@ fn it_caches_async_workers_payload() {
         updater.update_ready().expect("couldn't check for update"),
     );
 
-    // Consequenst calls to update_ready should cache the payload.
+    // Consequent calls to update_ready should cache the payload.
     let _m = setup_mock_server(400);
     assert_eq!(
         true,
@@ -203,7 +203,7 @@ fn it_does_one_network_call_per_interval() {
     let _m = setup_mock_server(503);
     let t = updater.update_ready();
     assert!(t.is_ok());
-    // Make sure we stil report update is ready
+    // Make sure we still report update is ready
     assert_eq!(true, t.unwrap());
 }
 
@@ -326,7 +326,7 @@ pub(super) fn setup_workflow_env_vars(secure_temp_dir: bool) -> PathBuf {
     // Mimic Alfred's environment variables
     let path = if secure_temp_dir {
         Builder::new()
-            .prefix("alfred_rs_test")
+            .prefix("alfred_workflow_test")
             .rand_bytes(5)
             .tempdir()
             .unwrap()
