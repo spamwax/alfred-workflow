@@ -450,7 +450,8 @@ where
     /// [`UPDATE_INTERVAL`]: constant.UPDATE_INTERVAL.html
     pub fn update_ready(&self) -> Result<bool, Error> {
         if self.state.borrow_worker().is_none() {
-            self.update_ready_sync()
+            Err(err_msg("update_ready_sync is deprecated. use init()"))
+        // self.update_ready_sync()
         } else {
             self.update_ready_async(false)
         }
@@ -516,7 +517,8 @@ where
     /// [`update_ready()`]: struct.Updater.html#method.update_ready
     pub fn try_update_ready(&self) -> Result<bool, Error> {
         if self.state.borrow_worker().is_none() {
-            self.update_ready_sync()
+            Err(err_msg("update_ready_sync is deprecated. use init()"))
+        // self.update_ready_sync()
         } else {
             self.update_ready_async(true)
         }

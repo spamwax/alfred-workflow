@@ -5,7 +5,6 @@ use std::cell::RefMut;
 use std::sync::mpsc;
 use Updater;
 
-pub(super) const LATEST_UPDATE_INFO_CACHE_FN: &str = "last_check_status.json";
 pub(super) const LATEST_UPDATE_INFO_CACHE_FN_ASYNC: &str = "last_check_status_async.json";
 
 // Payload that the worker thread will send back
@@ -257,113 +256,6 @@ where
             })
     }
 
-    /// Checks if a new update is available (blocking).
-    ///
-    /// This method will fetch the latest release information from repository
-    /// and compare it to the current release of the workflow. The repository should
-    /// tag each release according to semantic version scheme for this to work.
-    ///
-    /// The method **will** make a network call to fetch metadata of releases *only if* UPDATE_INTERVAL
-    /// seconds has passed since the last network call.
-    ///
-    /// All calls, which happen before the UPDATE_INTERVAL seconds, will use a local cache
-    /// to report availability of a release without blocking the main thread.
-    ///
-    /// For `Updater`s talking to `github.com`, this method will only fetch a small metadata file to extract
-    /// the version info of the latest release.
-    ///
-    /// # Note
-    ///
-    /// Since this method blocks the current thread until a response is received from remote server,
-    /// workflow authors should consider scenarios where network connection is poor and the block can
-    /// take a long time (>1 second), and devise their workflow around it. An alternative to
-    /// this method is the non-blocking [`update_ready_async()`].
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// # extern crate failure;
-    /// extern crate alfred_rs;
-    ///
-    /// use alfred_rs::Updater;
-    ///
-    /// # use failure::Error;
-    /// # use std::io;
-    /// # fn main() {
-    /// let updater =
-    ///     Updater::gh("spamwax/alfred-pinboard-rs").expect("cannot initiate Updater");
-    ///
-    /// // The very first call to `update_ready()` will return `false`
-    /// // since it's assumed that user has just downloaded the workflow.
-    /// assert_eq!(false, updater.update_ready().unwrap());
-    ///
-    /// // Above will save the state of `Updater` in workflow's data folder.
-    /// // Depending on how long has elapsed since first run, consequent calls
-    /// // to `update_ready()` may return false if it has been less than
-    /// // the interval set for checking (defaults to 24 hours).
-    ///
-    /// // However in subsequent runs, when the checking interval period has elapsed
-    /// // and there actually exists a new release, then `update_ready()` will return true.
-    /// assert_eq!(true, updater.update_ready().unwrap());
-    ///
-    /// # }
-    /// ```
-    ///
-    /// # Errors
-    /// Checking for update can fail if network error, file error or Alfred environment variable
-    /// errors happen.
-    ///
-    /// [`update_ready_async()`]: struct.Updater.html#method.update_ready_async
-    pub(super) fn update_ready_sync(&self) -> Result<bool, Error> {
-        // A None value for last_check indicates that workflow is being run for first time.
-        // Thus we update last_check to now and just save the updater state without asking
-        // Releaser to do a remote call/check for us since we assume that user just downloaded
-        // the workflow.
-        use self::imp::LATEST_UPDATE_INFO_CACHE_FN;
-
-        // file for status of last update check
-        let p = Self::build_data_fn()?.with_file_name(LATEST_UPDATE_INFO_CACHE_FN);
-
-        // make a network call to see if a newer version is avail.
-        // save the result of call to cache file.
-        let ask_releaser_for_update = || -> Result<bool, Error> {
-            let (v, url) = self.releaser.borrow().latest_release()?;
-            let update_avail = *self.current_version() < v;
-
-            let now = Utc::now();
-            let payload = {
-                let mut info = UpdateInfo::new(v, url);
-                info.set_fetched_at(now.clone());
-                Some(info)
-            };
-
-            self.set_last_check(now);
-            Self::write_last_check_status(&p, &payload)?;
-            *self.state.avail_release.borrow_mut() = payload;
-
-            self.save()?;
-            Ok(update_avail)
-        };
-
-        // if first time checking, just update the updater's timestamp, no network call
-        if self.last_check().is_none() {
-            self.set_last_check(Utc::now());
-            self.save()?;
-            Ok(false)
-        } else if self.due_to_check() {
-            // it's time to talk to remote server
-            ask_releaser_for_update()
-        } else {
-            Self::read_last_check_status(&p)
-                .map(|last_check_status| {
-                    last_check_status
-                        .map(|last_update_info| *self.current_version() < last_update_info.version)
-                        .unwrap_or(false)
-                })
-                .or(Ok(false))
-        }
-    }
-
     pub(super) fn update_ready_async(&self, try_flag: bool) -> Result<bool, Error> {
         self.state
             .worker_state
@@ -460,6 +352,57 @@ where
             }
         } else {
             Ok(false)
+        }
+    }
+
+    #[allow(dead_code)]
+    pub(super) fn _update_ready_sync(&self) -> Result<bool, Error> {
+        // A None value for last_check indicates that workflow is being run for first time.
+        // Thus we update last_check to now and just save the updater state without asking
+        // Releaser to do a remote call/check for us since we assume that user just downloaded
+        // the workflow.
+        const LATEST_UPDATE_INFO_CACHE_FN: &str = "last_check_status.json";
+
+        // file for status of last update check
+        let p = Self::build_data_fn()?.with_file_name(LATEST_UPDATE_INFO_CACHE_FN);
+
+        // make a network call to see if a newer version is avail.
+        // save the result of call to cache file.
+        let ask_releaser_for_update = || -> Result<bool, Error> {
+            let (v, url) = self.releaser.borrow().latest_release()?;
+            let update_avail = *self.current_version() < v;
+
+            let now = Utc::now();
+            let payload = {
+                let mut info = UpdateInfo::new(v, url);
+                info.set_fetched_at(now.clone());
+                Some(info)
+            };
+
+            self.set_last_check(now);
+            Self::write_last_check_status(&p, &payload)?;
+            *self.state.avail_release.borrow_mut() = payload;
+
+            self.save()?;
+            Ok(update_avail)
+        };
+
+        // if first time checking, just update the updater's timestamp, no network call
+        if self.last_check().is_none() {
+            self.set_last_check(Utc::now());
+            self.save()?;
+            Ok(false)
+        } else if self.due_to_check() {
+            // it's time to talk to remote server
+            ask_releaser_for_update()
+        } else {
+            Self::read_last_check_status(&p)
+                .map(|last_check_status| {
+                    last_check_status
+                        .map(|last_update_info| *self.current_version() < last_update_info.version)
+                        .unwrap_or(false)
+                })
+                .or(Ok(false))
         }
     }
 }
