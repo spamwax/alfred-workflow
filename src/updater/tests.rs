@@ -4,6 +4,7 @@ use self::releaser::GithubReleaser;
 use self::releaser::MOCK_RELEASER_REPO_NAME;
 use super::*;
 use std::ffi::OsStr;
+use std::{thread, time};
 use tempfile::Builder;
 const VERSION_TEST: &str = "0.10.5";
 const VERSION_TEST_NEW: &str = "0.11.1"; // should match what the mock server replies for new version.
@@ -182,29 +183,79 @@ fn it_get_latest_info_from_releaser() {
 
 #[test]
 fn it_does_one_network_call_per_interval() {
-    setup_workflow_env_vars(true);
-    let _m = setup_mock_server(200);
+    {
+        setup_workflow_env_vars(true);
+        let _m = setup_mock_server(200);
+        let two = 2;
 
-    first_check_after_installing_workflow(false);
+        first_check_after_installing_workflow(false);
 
-    let mut updater = Updater::gh(MOCK_RELEASER_REPO_NAME).expect("cannot build Updater");
-    // Next check will be immediate
-    updater.set_interval(0);
+        let mut updater = Updater::gh(MOCK_RELEASER_REPO_NAME).expect("cannot build Updater");
+        // Next check will be immediate
+        updater.set_interval(0);
+        updater.init().expect("couldn't init worker");
 
-    // Next update_ready will make a network call
-    assert!(updater.update_ready().expect("couldn't check for update"));
+        // Next update_ready will make a network call
+        assert!(updater.update_ready().expect("couldn't check for update"));
 
-    // Increase interval
-    updater.set_interval(86400);
-    assert!(!updater.due_to_check());
+        // Increase interval
+        updater.set_interval(two as i64);
+        assert!(!updater.due_to_check());
 
-    // make mock server return error. This way we can test that no network call was made
-    // assuming Updater can read its cache file successfully
-    let _m = setup_mock_server(503);
-    let t = updater.update_ready();
-    assert!(t.is_ok());
-    // Make sure we still report update is ready
-    assert_eq!(true, t.unwrap());
+        // make mock server return error. This way we can test that no network call was made
+        // assuming Updater can read its cache file successfully
+        let _m = setup_mock_server(503);
+        let t = updater.update_ready();
+        assert!(t.is_ok());
+        // Make sure we still report update is ready
+        assert_eq!(true, t.unwrap());
+
+        // Now we test that after interval has passed we will make a call
+        let two_sec = time::Duration::from_secs(two);
+        thread::sleep(two_sec);
+        {
+            let mut updater = Updater::gh(MOCK_RELEASER_REPO_NAME).expect("cannot build Updater");
+            updater.set_interval(two as i64);
+            updater.init().expect("couldn't init worker");
+            assert!(updater.due_to_check());
+
+            // Since server is returning error, update_ready() should fail.
+            let t = updater.update_ready();
+            assert_eq!(true, t.is_err());
+        }
+        {
+            // Just making sure the next call will go through and return expected results.
+            let _m = setup_mock_server(200);
+            let mut updater = Updater::gh(MOCK_RELEASER_REPO_NAME).expect("cannot build Updater");
+            // Next check will be immediate
+            updater.set_interval(0);
+            updater.init().expect("couldn't init worker");
+            assert!(updater.due_to_check());
+
+            // Since server is returning error, update_ready() should fail.
+            let t = updater.update_ready();
+            assert_eq!(true, t.is_ok());
+            assert_eq!(
+                true,
+                updater.update_ready().expect("couldn't check for update")
+            );
+        }
+    }
+
+    // {
+    //     setup_workflow_env_vars(true);
+    //     let _m = setup_mock_server(200);
+    //     first_check_after_installing_workflow(true);
+
+    //     let mut updater = Updater::gh(MOCK_RELEASER_REPO_NAME).expect("cannot build Updater");
+    //     updater.set_interval(0);
+    //     updater.init().expect("couldn't init worker");
+    //     assert!(updater.due_to_check());
+    //     assert_eq!(
+    //         true,
+    //         updater.update_ready().expect("couldn't check for update")
+    //     );
+    // }
 }
 
 #[test]

@@ -90,7 +90,7 @@ impl UpdateInfo {
         self.fetched_at.as_ref()
     }
 
-    pub(super) fn set_fetche_at(&mut self, date_time: DateTime<Utc>) {
+    pub(super) fn set_fetched_at(&mut self, date_time: DateTime<Utc>) {
         self.fetched_at = Some(date_time);
     }
 }
@@ -135,13 +135,14 @@ where
         } else {
             let current_version = env::workflow_version()
                 .map_or_else(|| Ok(Version::from((0, 0, 0))), |v| Version::parse(&v))?;
-            let url = Url::parse("fake://hasnt.fetched.update_info").expect("Impossible!");
-            let mut update_info = UpdateInfo::new(current_version.clone(), url);
-            update_info.set_fetche_at(Utc::now());
+            // let url = Url::parse("fake://hasnt.fetched.update_info").expect("Impossible!");
+            // let mut update_info = UpdateInfo::new(current_version.clone(), url);
+            // update_info.set_fetche_at(Utc::now());
             let state = UpdaterState {
                 current_version,
                 last_check: Cell::new(None),
-                avail_release: RefCell::new(Some(update_info)),
+                avail_release: RefCell::new(None),
+                // avail_release: RefCell::new(Some(update_info)),
                 worker_state: RefCell::new(None),
                 update_interval: UPDATE_INTERVAL,
             };
@@ -155,23 +156,12 @@ where
     }
 
     pub(super) fn last_check(&self) -> Option<DateTime<Utc>> {
-        // if let Some(update_info) = self.state.avail_release.borrow().as_ref() {
-        //     update_info.fetched_at().map(|dt| *dt)
-        // } else {
-        //     None
-        // }
-
-        // self.state
-        //     .avail_release
-        //     .borrow()
-        //     .as_ref()
-        //     .map(|ui| ui.fetched_at().map(|dt| *dt));
         self.state.last_check.get()
     }
 
-    // pub(super) fn set_last_check(&self, t: DateTime<Utc>) {
-    //     self.state.last_check.set(Some(t));
-    // }
+    pub(super) fn set_last_check(&self, t: DateTime<Utc>) {
+        self.state.last_check.set(Some(t));
+    }
 
     pub(super) fn update_interval(&self) -> i64 {
         self.state.update_interval
@@ -190,7 +180,6 @@ where
     // Save updater's state
     pub(super) fn save(&self) -> Result<(), Error> {
         let data_file_path = Self::build_data_fn()?;
-        // println!("state: {:?}", &self.state);
         // println!("saving to ==> {:?}", data_file_path.parent());
         ::Data::save_to_file(&data_file_path, &self.state).or_else(|e| {
             let _ = remove_file(data_file_path);
@@ -211,7 +200,7 @@ where
             let talk_to_mother = || -> Result<(), Error> {
                 let (v, url) = releaser.latest_release()?;
                 let mut info = UpdateInfo::new(v, url);
-                info.set_fetche_at(Utc::now());
+                info.set_fetched_at(Utc::now());
                 let payload = Some(info);
                 Self::write_last_check_status(&p, &payload)?;
                 tx.send(Ok(payload))?;
@@ -344,10 +333,11 @@ where
             let now = Utc::now();
             let payload = {
                 let mut info = UpdateInfo::new(v, url);
-                info.set_fetche_at(now.clone());
+                info.set_fetched_at(now.clone());
                 Some(info)
             };
-            self.state.last_check.set(Some(now));
+
+            self.set_last_check(now);
             Self::write_last_check_status(&p, &payload)?;
             *self.state.avail_release.borrow_mut() = payload;
 
@@ -357,8 +347,7 @@ where
 
         // if first time checking, just update the updater's timestamp, no network call
         if self.last_check().is_none() {
-            // self.set_last_check(Utc::now());
-            self.state.last_check.set(Some(Utc::now()));
+            self.set_last_check(Utc::now());
             self.save()?;
             Ok(false)
         } else if self.due_to_check() {
@@ -397,26 +386,20 @@ where
                                 rx.recv().map_err(|e| err_msg(format!("{}", e)))
                             };
                             rr.and_then(|msg| {
-                                // println!("msg: {:?}", msg);
                                 let msg_status = msg.map(|update_info| {
-                                    // println!("update_info : {:?}", update_info);
                                     // received good message, update cache for received payload
                                     *self.state.avail_release.borrow_mut() = update_info.clone();
-                                    if let Some(last_check) = self.state.last_check.get() {
-                                        if update_info.is_some()
-                                            && update_info.as_ref().unwrap().fetched_at().is_some()
-                                        {
-                                            if *update_info.as_ref().unwrap().fetched_at().unwrap()
-                                                > last_check
+                                    // update last_check if received info is newer than last_check
+                                    update_info.as_ref().map(|ui| {
+                                        ui.fetched_at().map(|fetched_time| {
+                                            if self.last_check().is_none()
+                                                || self.last_check().as_ref().unwrap()
+                                                    < fetched_time
                                             {
-                                                self.state.last_check.set(Some(*update_info
-                                                    .as_ref()
-                                                    .unwrap()
-                                                    .fetched_at()
-                                                    .unwrap()));
+                                                self.set_last_check(*fetched_time)
                                             }
-                                        }
-                                    }
+                                        })
+                                    });
                                     *mpsc.recvd_payload.borrow_mut() = Some(Ok(update_info));
                                 });
                                 // save state regardless of content of msg

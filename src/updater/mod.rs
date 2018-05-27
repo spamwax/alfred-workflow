@@ -364,8 +364,7 @@ where
         let (tx, rx) = mpsc::channel();
 
         if self.last_check().is_none() {
-            // self.set_last_check(Utc::now());
-            self.state.last_check.set(Some(Utc::now()));
+            self.set_last_check(Utc::now());
             self.save()?;
             // This send is always successful
             tx.send(Ok(None)).unwrap();
