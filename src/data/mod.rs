@@ -22,11 +22,11 @@
 //! let mut workflow_data = Data::load().unwrap();
 //!
 //! // Set **and** save key/value `user_id: 0xFF` pair
-//! workflow_data.set("user_id", 0xFF);
+//! workflow_data.set("user_id", &0xFF);
 //!
 //! // We can set/save different data types.
 //! // Set and save last time user updated a cache
-//! workflow_data.set("last_cache_update", Utc::now());
+//! workflow_data.set("last_cache_update", &Utc::now());
 //! ```
 //!
 //! See `Data`'s [documentation] for more examples.
@@ -86,19 +86,19 @@ impl Data {
     ///
     /// let mut workflow_data = Data::load().unwrap();
     ///
-    /// workflow_data.set("user_id", 0xFF);
-    /// workflow_data.set("last_log_date", Utc::now());
+    /// workflow_data.set("user_id", &0xFF);
+    /// workflow_data.set("last_log_date", &Utc::now());
     /// ```
     /// # Errors:
     /// If `v` cannot be serialized or there are file IO issues an error is returned.
-    pub fn set<K, V>(&mut self, k: K, v: V) -> Result<(), Error>
+    pub fn set<K, V>(&mut self, k: K, v: &V) -> Result<(), Error>
     where
         K: Into<String>,
         V: Serialize,
     {
         let v = to_value(v)?;
         self.inner.insert(k.into(), v);
-        self.save_data_to_disk()
+        self.write_data_to_disk()
     }
 
     /// Get (possible) value of key `k` from workflow's data file
@@ -238,7 +238,7 @@ impl Data {
             })
     }
 
-    fn save_data_to_disk(&self) -> Result<(), Error> {
+    fn write_data_to_disk(&self) -> Result<(), Error> {
         env::workflow_data()
             .ok_or_else(|| {
                 err_msg("missing env variable for data dir. forgot to set workflow bundle id?")
@@ -292,9 +292,9 @@ mod tests {
         {
             let mut wf_data: Data = Data::load().unwrap();
             println!("{:?}", wf_data);
-            wf_data.set("key1", 8).unwrap();
-            wf_data.set("key2", user).unwrap();
-            wf_data.set("date", Utc::now()).unwrap();
+            wf_data.set("key1", &8).unwrap();
+            wf_data.set("key2", &user).unwrap();
+            wf_data.set("date", &Utc::now()).unwrap();
             println!("{:?}", wf_data);
         }
 

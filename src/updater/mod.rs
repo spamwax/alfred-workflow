@@ -142,7 +142,10 @@ mod releaser;
 #[cfg(test)]
 mod tests;
 
-/// Default update interval duration (24 hrs)
+/// Default update check interval duration (24 hrs). To change the interval use the
+/// [`set_interval()`] method.
+///
+/// [`set_interval()`]: struct.Updater.html#method.set_interval
 pub const UPDATE_INTERVAL: i64 = 24 * 60 * 60;
 
 pub use self::releaser::GithubReleaser;
@@ -741,5 +744,31 @@ where
                     })?;
                 Ok(latest_release_downloaded_fn)
             })
+    }
+
+    /// Returns the version for the latest downloadable workflow from [`Releaser`].
+    /// `None` is returned if no release info has yet been fetched from server.
+    ///
+    /// # Note
+    /// This method does not perform any network or disk IO. It merely returns the cached
+    /// version info based on last successful communication with the remote server.
+    /// So it is possible the method will return a version different than server's version if:
+    /// - It's been less than [`UPDATE_INTERVAL`] seconds since last check, or
+    /// - Worker thread is busy checking and you called this method before it finishes.
+    ///
+    /// Limit calling this method after [`update_ready()`] or [`try_update_ready()`] indicates that
+    /// a new version is available.
+    ///
+    /// [`Releaser`]: trait.Releaser.html
+    /// [`UPDATE_INTERVAL`]: constant.UPDATE_INTERVAL.html
+    /// [`update_ready()`]: struct.Updater.html#method.update_ready
+    /// [`try_update_ready()`]: struct.Updater.html#method.try_update_ready
+    pub fn latest_avail_version(&self) -> Option<Version> {
+        self.state.latest_avail_version()
+    }
+
+    /// Get workflow's current version
+    pub fn current_version(&self) -> &Version {
+        self.state.current_version()
     }
 }

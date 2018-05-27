@@ -23,8 +23,18 @@ pub(super) struct UpdaterState {
 }
 
 impl UpdaterState {
+    pub(super) fn current_version(&self) -> &Version {
+        &self.current_version
+    }
+
     pub(super) fn set_version(&mut self, v: Version) {
         self.current_version = v;
+    }
+
+    pub(super) fn latest_avail_version(&self) -> Option<Version> {
+        self.avail_release.borrow().as_ref().map(|ui| {
+            ui.version().clone()
+        })
     }
 
     pub(super) fn borrow_worker(&self) -> Ref<'_, Option<MPSCState>> {
@@ -112,10 +122,6 @@ where
             updater.save()?;
             Ok(updater)
         }
-    }
-
-    pub(super) fn current_version(&self) -> &Version {
-        &self.state.current_version
     }
 
     pub(super) fn last_check(&self) -> Option<DateTime<Utc>> {

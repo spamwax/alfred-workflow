@@ -6,13 +6,13 @@
 Helpers for writing [Alfred][alfred.app] [Workflows][] with features such as:
 
 Features:
-- Self automatic update of workflows using this crate ([`updater`]).
-- Read/write API for workflow data (settings, cache data, ...) ([`data`]).
+- Self automatic update of workflows using this crate: [`updater`].
+- Read/write API for workflow data (settings, cache data, ...): [`data`].
 
 This crate adds enhanced features and quality-of-life improvements to
 [other alfred crate][alfred]'s basic functionality of creating **Script Filter** items.
 
-# Documentation
+## Documentation
 For examples and complete documentation visit [API Documentation].
 
 [`updater`]: https://docs.rs/alfred-rs/latest/alfred_rs/updater/index.html
