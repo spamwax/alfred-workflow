@@ -1,4 +1,5 @@
 use super::*;
+use std::cell::Cell;
 use std::cell::Ref;
 use std::cell::RefMut;
 use std::sync::mpsc;
@@ -12,12 +13,15 @@ type ReleasePayloadResult = Result<Option<UpdateInfo>, Error>;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(super) struct UpdaterState {
+    pub(super) last_check: Cell<Option<DateTime<Utc>>>,
+
     current_version: Version,
+
     avail_release: RefCell<Option<UpdateInfo>>,
-    last_check: Cell<Option<DateTime<Utc>>>,
 
     #[serde(skip, default = "default_interval")]
     update_interval: i64,
+
     #[serde(skip)]
     worker_state: RefCell<Option<MPSCState>>,
 }
@@ -32,9 +36,10 @@ impl UpdaterState {
     }
 
     pub(super) fn latest_avail_version(&self) -> Option<Version> {
-        self.avail_release.borrow().as_ref().map(|ui| {
-            ui.version().clone()
-        })
+        self.avail_release
+            .borrow()
+            .as_ref()
+            .map(|ui| ui.version().clone())
     }
 
     pub(super) fn borrow_worker(&self) -> Ref<'_, Option<MPSCState>> {
@@ -56,16 +61,37 @@ impl UpdaterState {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub(super) struct UpdateInfo {
     // Latest version available from github or releaser
-    version: Version,
+    pub version: Version,
+
+    pub fetched_at: Option<DateTime<Utc>>,
 
     // Link to use to download the above version
     #[serde(with = "url_serde")]
-    downloadable_url: Url,
+    pub downloadable_url: Url,
+
+    _priv: (),
 }
 
 impl UpdateInfo {
+    pub fn new(v: Version, url: Url) -> Self {
+        UpdateInfo {
+            version: v,
+            fetched_at: None,
+            downloadable_url: url,
+            _priv: (),
+        }
+    }
+
     pub(super) fn version(&self) -> &Version {
         &self.version
+    }
+
+    pub(super) fn fetched_at(&self) -> Option<&DateTime<Utc>> {
+        self.fetched_at.as_ref()
+    }
+
+    pub(super) fn set_fetche_at(&mut self, date_time: DateTime<Utc>) {
+        self.fetched_at = Some(date_time);
     }
 }
 
@@ -91,6 +117,7 @@ where
     T: Releaser + Send + 'static,
 {
     pub(super) fn load_or_new(r: T) -> Result<Self, Error> {
+        let _ = env_logger::try_init();
         if let Ok(mut saved_state) = Self::load() {
             // Overwrite saved state's current_version if the version that
             // may have been set through env. variable is semantically
@@ -108,10 +135,13 @@ where
         } else {
             let current_version = env::workflow_version()
                 .map_or_else(|| Ok(Version::from((0, 0, 0))), |v| Version::parse(&v))?;
+            let url = Url::parse("fake://hasnt.fetched.update_info").expect("Impossible!");
+            let mut update_info = UpdateInfo::new(current_version.clone(), url);
+            update_info.set_fetche_at(Utc::now());
             let state = UpdaterState {
                 current_version,
-                avail_release: RefCell::new(None),
                 last_check: Cell::new(None),
+                avail_release: RefCell::new(Some(update_info)),
                 worker_state: RefCell::new(None),
                 update_interval: UPDATE_INTERVAL,
             };
@@ -125,12 +155,23 @@ where
     }
 
     pub(super) fn last_check(&self) -> Option<DateTime<Utc>> {
+        // if let Some(update_info) = self.state.avail_release.borrow().as_ref() {
+        //     update_info.fetched_at().map(|dt| *dt)
+        // } else {
+        //     None
+        // }
+
+        // self.state
+        //     .avail_release
+        //     .borrow()
+        //     .as_ref()
+        //     .map(|ui| ui.fetched_at().map(|dt| *dt));
         self.state.last_check.get()
     }
 
-    pub(super) fn set_last_check(&self, t: DateTime<Utc>) {
-        self.state.last_check.set(Some(t));
-    }
+    // pub(super) fn set_last_check(&self, t: DateTime<Utc>) {
+    //     self.state.last_check.set(Some(t));
+    // }
 
     pub(super) fn update_interval(&self) -> i64 {
         self.state.update_interval
@@ -149,6 +190,8 @@ where
     // Save updater's state
     pub(super) fn save(&self) -> Result<(), Error> {
         let data_file_path = Self::build_data_fn()?;
+        // println!("state: {:?}", &self.state);
+        // println!("saving to ==> {:?}", data_file_path.parent());
         ::Data::save_to_file(&data_file_path, &self.state).or_else(|e| {
             let _ = remove_file(data_file_path);
             Err(e)
@@ -167,13 +210,9 @@ where
         thread::Builder::new().spawn(move || {
             let talk_to_mother = || -> Result<(), Error> {
                 let (v, url) = releaser.latest_release()?;
-                let payload = {
-                    let info = UpdateInfo {
-                        version: v,
-                        downloadable_url: url,
-                    };
-                    Some(info)
-                };
+                let mut info = UpdateInfo::new(v, url);
+                info.set_fetche_at(Utc::now());
+                let payload = Some(info);
                 Self::write_last_check_status(&p, &payload)?;
                 tx.send(Ok(payload))?;
                 Ok(())
@@ -302,24 +341,24 @@ where
             let (v, url) = self.releaser.borrow().latest_release()?;
             let update_avail = *self.current_version() < v;
 
+            let now = Utc::now();
             let payload = {
-                let info = UpdateInfo {
-                    version: v,
-                    downloadable_url: url,
-                };
+                let mut info = UpdateInfo::new(v, url);
+                info.set_fetche_at(now.clone());
                 Some(info)
             };
+            self.state.last_check.set(Some(now));
             Self::write_last_check_status(&p, &payload)?;
             *self.state.avail_release.borrow_mut() = payload;
 
-            self.set_last_check(Utc::now());
             self.save()?;
             Ok(update_avail)
         };
 
         // if first time checking, just update the updater's timestamp, no network call
         if self.last_check().is_none() {
-            self.set_last_check(Utc::now());
+            // self.set_last_check(Utc::now());
+            self.state.last_check.set(Some(Utc::now()));
             self.save()?;
             Ok(false)
         } else if self.due_to_check() {
@@ -358,14 +397,31 @@ where
                                 rx.recv().map_err(|e| err_msg(format!("{}", e)))
                             };
                             rr.and_then(|msg| {
+                                // println!("msg: {:?}", msg);
                                 let msg_status = msg.map(|update_info| {
+                                    // println!("update_info : {:?}", update_info);
                                     // received good message, update cache for received payload
                                     *self.state.avail_release.borrow_mut() = update_info.clone();
+                                    if let Some(last_check) = self.state.last_check.get() {
+                                        if update_info.is_some()
+                                            && update_info.as_ref().unwrap().fetched_at().is_some()
+                                        {
+                                            if *update_info.as_ref().unwrap().fetched_at().unwrap()
+                                                > last_check
+                                            {
+                                                self.state.last_check.set(Some(*update_info
+                                                    .as_ref()
+                                                    .unwrap()
+                                                    .fetched_at()
+                                                    .unwrap()));
+                                            }
+                                        }
+                                    }
                                     *mpsc.recvd_payload.borrow_mut() = Some(Ok(update_info));
                                 });
                                 // save state regardless of content of msg
-                                self.set_last_check(Utc::now());
                                 self.save()?;
+                                // println!("msg_status: {:?} ", msg_status);
                                 msg_status?;
                                 Ok(())
                             })
@@ -378,7 +434,10 @@ where
             .avail_release
             .borrow()
             .as_ref()
-            .map(|release| *self.current_version() < release.version)
+            .map(|release| {
+                // println!("release {:#?} ", release);
+                *self.current_version() < release.version
+            })
             .unwrap_or(false))
     }
 
@@ -403,7 +462,7 @@ where
                 } else {
                     return Err(err_msg(format!("{:?}", msg.as_ref().unwrap_err())));
                 }
-                self.set_last_check(Utc::now());
+                // self.set_last_check(Utc::now());
                 self.save()?;
             } else {
                 eprintln!("{:?}", rr);

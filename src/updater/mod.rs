@@ -122,10 +122,10 @@
 
 use chrono::prelude::*;
 use env;
+use env_logger;
 use failure::{err_msg, Error};
 use reqwest;
 use semver::Version;
-use std::cell::Cell;
 use std::cell::RefCell;
 use std::env as StdEnv;
 use std::fs::{remove_file, File};
@@ -364,17 +364,21 @@ where
         let (tx, rx) = mpsc::channel();
 
         if self.last_check().is_none() {
-            self.set_last_check(Utc::now());
+            // self.set_last_check(Utc::now());
+            self.state.last_check.set(Some(Utc::now()));
             self.save()?;
             // This send is always successful
             tx.send(Ok(None)).unwrap();
         } else if self.due_to_check() {
+            // if self.due_to_check() {
+            // if self.due_to_check() {
             // it's time to talk to remote server
             self.start_releaser_worker(tx, p)?;
         } else {
             let status = Self::read_last_check_status(&p)
                 .map(|last_check| {
                     last_check.and_then(|info| {
+                        debug!("  read last_check_status: {:?}", info);
                         if self.current_version() < info.version() {
                             Some(info)
                         } else {
@@ -619,6 +623,7 @@ where
     /// [`UPDATE_INTERVAL`]: constant.UPDATE_INTERVAL.html
     pub fn due_to_check(&self) -> bool {
         self.last_check().map_or(true, |dt| {
+            debug!("last check: {}", dt);
             Utc::now().signed_duration_since(dt) > Duration::seconds(self.update_interval())
         })
     }

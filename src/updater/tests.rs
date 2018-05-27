@@ -246,7 +246,10 @@ fn it_doesnt_download_without_release_info() {
     let _m = setup_mock_server(200);
     first_check_after_installing_workflow(true);
 
-    let updater = Updater::gh(MOCK_RELEASER_REPO_NAME).expect("cannot build Updater");
+    let mut updater = Updater::gh(MOCK_RELEASER_REPO_NAME).expect("cannot build Updater");
+    updater.set_interval(864000);
+
+    assert_eq!(false, updater.due_to_check());
     updater.init().expect("couldn't init worker");
 
     assert!(updater.download_latest().is_err());
