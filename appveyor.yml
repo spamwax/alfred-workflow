@@ -36,9 +36,9 @@ test_script:
   - if [%APPVEYOR_REPO_TAG%]==[false] (
       set RUST_TEST_NOCAPTURE=1 &&
       cargo build --target %TARGET% &&
-      cargo test ---target %TARGET% -features updater --lib -- --test-threads=1 &&
-      cargo test ---target %TARGET% -features updater --lib -- --test-threads=1 --ignored &&
-      cargo test ---target %TARGET% -features updater --doc
+      cargo test ---target %TARGET% --features updater --lib -- --test-threads=1 &&
+      cargo test ---target %TARGET% --features updater --lib -- --test-threads=1 --ignored &&
+      cargo test ---target %TARGET% --features updater --doc
     )
 
 cache:

@@ -3,17 +3,17 @@
 [![Build Status](https://travis-ci.org/spamwax/alfred-workflow.svg?branch=master)](https://travis-ci.org/spamwax/alfred-workflow)
 [![crates.io/crates/alfred-rs](http://meritbadge.herokuapp.com/alfred-rs)](https://crates.io/crates/alfred-rs)
 
-Helpers for writing [Alfred][alfred.app] [Workflows][] with features such as:
-
-Features:
-- Self automatic update of workflows using this crate: [`updater`].
-- Read/write API for workflow data (settings, cache data, ...): [`data`].
+Write [Workflows][] for [Alfred][alfred.app] app with ease!
 
 This crate adds enhanced features and quality-of-life improvements to
 [other alfred crate][alfred]'s basic functionality of creating **Script Filter** items.
 
+Using this crate to create your workflows, you can
+- Set up automatic update of workflow ([`updater`] module).
+- Painlessly read/write data related to workflow (settings, cache data, ...) ([`data`] module).
+
 ## Documentation
-For examples and complete documentation visit [API Documentation].
+For examples and complete documentation visit [API Documentation][].
 
 [`updater`]: https://docs.rs/alfred-rs/latest/alfred_rs/updater/index.html
 [`data`]: https://docs.rs/alfred-rs/latest/alfred_rs/data/index.html
@@ -29,8 +29,16 @@ Add the following to your `Cargo.toml` file:
 ```toml
 [dependencies]
 
-alfred-rs = "0.3"
+alfred-rs = "0.4"
 ```
+
+## Changelog
+
+- 0.4
+  - #### Breaking changes
+    - Methods that save data now accept `ref` instead of moving the value to be save.
+  - #### Bug fix
+    - Checking for updates will now correctly make network calls after prior failures.
 
 ## License
 

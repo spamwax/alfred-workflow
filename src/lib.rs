@@ -5,7 +5,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Helpers for writing Alfred workflows.
+//! Write [Workflows] for [Alfred][alfred.app] app with ease!
 //!
 //! This crate adds enhanced features and quality-of-life improvements to
 //! [other alfred crate][alfred]'s basic functionality of creating **Script Filter** items.
@@ -17,8 +17,10 @@
 //! [`updater`]: updater/index.html
 //! [`data`]: data/index.html
 //! [alfred]: https://crates.io/crates/alfred
+//! [alfred.app]: http://www.alfredapp.com
+//! [Workflows]: https://www.alfredapp.com/workflows/
 //!
-#![doc(html_root_url = "https://docs.rs/alfred-rs/0.3.1")]
+#![doc(html_root_url = "https://docs.rs/alfred-rs/0.4.0")]
 
 extern crate alfred;
 #[macro_use]

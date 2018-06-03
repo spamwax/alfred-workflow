@@ -25,8 +25,16 @@
 //! workflow_data.set("user_id", &0xFF);
 //!
 //! // We can set/save different data types.
-//! // Set and save last time user updated a cache
-//! workflow_data.set("last_cache_update", &Utc::now());
+//! // For example, set and save timestamp of last use of workflow:
+//! workflow_data.set("last_use_date", &Utc::now());
+//!
+//!
+//! // Later on, you can retreive the values:
+//! let last_use: DateTime<Utc> =
+//!     workflow_data.get("last_use_date").expect("timestamp was not set");
+//!
+//! // Additioanlly, you can save temporarilyy data to workflow's cache folder:
+//! Data::save_to_file("all_my_tweets.cache", &vec!["chirp1", "chirp2"]).unwrap();
 //! ```
 //!
 //! See `Data`'s [documentation] for more examples.
@@ -75,7 +83,7 @@ impl Data {
     /// implements `Serialize`.
     ///
     /// This method overwrites values of any existing keys, otherwise adds the key/value pair
-    /// to the workflow's data *'stash'*
+    /// to the workflow's standard data file
     ///
     /// # Example
     /// ```rust,no_run
@@ -169,6 +177,7 @@ impl Data {
             .ok_or_else(|| {
                 err_msg("missing env variable for cache dir. forgot to set workflow bundle id?")
             })?;
+        debug!("saving to: {}", p.to_str().expect(""));
         File::create(p).map_err(|e| e.into()).and_then(|fp| {
             let buf_writer = BufWriter::with_capacity(0x1000, fp);
             serde_json::to_writer(buf_writer, data)?;
@@ -207,6 +216,7 @@ impl Data {
     {
         let p = env::workflow_cache()
             .and_then(|wfc| p.as_ref().file_name().map(|name| wfc.join(name)))?;
+        debug!("loading from: {}", p.to_str().expect(""));
         File::open(p)
             .and_then(|fp| {
                 let mut buf_reader = BufReader::with_capacity(0x1000, fp);
