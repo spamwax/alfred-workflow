@@ -131,7 +131,8 @@ impl GithubReleaser {
             )
             })
             .and_then(|r| {
-                let urls = r.assets
+                let urls = r
+                    .assets
                     .iter()
                     .filter(|asset| {
                         asset.state == "uploaded"
@@ -157,7 +158,8 @@ impl GithubReleaser {
             self.latest_release_data()?;
         }
 
-        let latest_version = self.latest_release
+        let latest_version = self
+            .latest_release
             .borrow()
             .as_ref()
             .map(|r| Version::parse(&r.tag_name).ok())

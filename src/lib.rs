@@ -7,12 +7,12 @@
 
 //! Helpers for writing Alfred workflows.
 //!
-//! ## Features:
-//! - Self automatic update of workflows using this crate ([`updater`]).
-//! - Read/write API for workflow data (settings, cache data, ...) ([`data`]).
-//!
 //! This crate adds enhanced features and quality-of-life improvements to
 //! [other alfred crate][alfred]'s basic functionality of creating **Script Filter** items.
+//!
+//! Using this crate to create your workflows, you can
+//! - Set up automatic update of workflow ([`updater`] module).
+//! - Painlessly read/write data related to workflow (settings, cache data, ...) ([`data`] module).
 //!
 //! [`updater`]: updater/index.html
 //! [`data`]: data/index.html
@@ -21,6 +21,7 @@
 #![doc(html_root_url = "https://docs.rs/alfred-rs/0.3.1")]
 
 extern crate alfred;
+#[macro_use]
 extern crate failure;
 extern crate serde;
 extern crate serde_json;

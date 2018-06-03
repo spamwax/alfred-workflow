@@ -134,14 +134,10 @@ where
         } else {
             let current_version = env::workflow_version()
                 .map_or_else(|| Ok(Version::from((0, 0, 0))), |v| Version::parse(&v))?;
-            // let url = Url::parse("fake://hasnt.fetched.update_info").expect("Impossible!");
-            // let mut update_info = UpdateInfo::new(current_version.clone(), url);
-            // update_info.set_fetche_at(Utc::now());
             let state = UpdaterState {
                 current_version,
                 last_check: Cell::new(None),
                 avail_release: RefCell::new(None),
-                // avail_release: RefCell::new(Some(update_info)),
                 worker_state: RefCell::new(None),
                 update_interval: UPDATE_INTERVAL,
             };
@@ -296,7 +292,6 @@ where
                                 });
                                 // save state regardless of content of msg
                                 self.save()?;
-                                // println!("msg_status: {:?} ", msg_status);
                                 msg_status?;
                                 Ok(())
                             })
@@ -309,10 +304,7 @@ where
             .avail_release
             .borrow()
             .as_ref()
-            .map(|release| {
-                // println!("release {:#?} ", release);
-                *self.current_version() < release.version
-            })
+            .map(|release| *self.current_version() < release.version)
             .unwrap_or(false))
     }
 
@@ -337,7 +329,6 @@ where
                 } else {
                     return Err(err_msg(format!("{:?}", msg.as_ref().unwrap_err())));
                 }
-                // self.set_last_check(Utc::now());
                 self.save()?;
             } else {
                 eprintln!("{:?}", rr);

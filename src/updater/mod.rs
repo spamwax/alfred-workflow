@@ -369,8 +369,6 @@ where
             // This send is always successful
             tx.send(Ok(None)).unwrap();
         } else if self.due_to_check() {
-            // if self.due_to_check() {
-            // if self.due_to_check() {
             // it's time to talk to remote server
             self.start_releaser_worker(tx, p)?;
         } else {
@@ -450,8 +448,7 @@ where
     /// [`UPDATE_INTERVAL`]: constant.UPDATE_INTERVAL.html
     pub fn update_ready(&self) -> Result<bool, Error> {
         if self.state.borrow_worker().is_none() {
-            Err(err_msg("update_ready_sync is deprecated. use init()"))
-        // self.update_ready_sync()
+            bail!("update_ready_sync is deprecated. use init()");
         } else {
             self.update_ready_async(false)
         }
@@ -517,8 +514,7 @@ where
     /// [`update_ready()`]: struct.Updater.html#method.update_ready
     pub fn try_update_ready(&self) -> Result<bool, Error> {
         if self.state.borrow_worker().is_none() {
-            Err(err_msg("update_ready_sync is deprecated. use init()"))
-        // self.update_ready_sync()
+            bail!("update_ready_sync is deprecated. use init()");
         } else {
             self.update_ready_async(true)
         }
