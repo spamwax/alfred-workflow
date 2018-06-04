@@ -93,6 +93,7 @@ struct ReleaseAsset {
 
 impl GithubReleaser {
     fn latest_release_data(&self) -> Result<(), Error> {
+        debug!("starting latest_release_data");
         let client = reqwest::Client::new();
 
         #[cfg(test)]
@@ -103,6 +104,7 @@ impl GithubReleaser {
             "{}{}{}",
             GITHUB_API_URL, self.repo, GITHUB_LATEST_RELEASE_ENDPOINT
         );
+        debug!("  url is: {:?}", url);
 
         client
             .get(&url)
@@ -114,6 +116,7 @@ impl GithubReleaser {
                 if latest.tag_name.starts_with('v') {
                     latest.tag_name.remove(0);
                 }
+                debug!("  release item: {:?}", latest);
                 *self.latest_release.borrow_mut() = Some(latest);
                 Ok(())
             })
@@ -122,6 +125,7 @@ impl GithubReleaser {
     // This implementation of Releaser will favor urls that end with `alfred3workflow`
     // over `alfredworkflow`
     fn downloadable_url(&self) -> Result<Url, Error> {
+        debug!("starting download_url");
         self.latest_release
             .borrow()
             .as_ref()
@@ -129,8 +133,7 @@ impl GithubReleaser {
                 err_msg(
                 "no release item available, did you first get version by calling latest_version?",
             )
-            })
-            .and_then(|r| {
+            }).and_then(|r| {
                 let urls = r
                     .assets
                     .iter()
@@ -138,9 +141,9 @@ impl GithubReleaser {
                         asset.state == "uploaded"
                             && (asset.browser_download_url.ends_with("alfredworkflow")
                                 || asset.browser_download_url.ends_with("alfred3workflow"))
-                    })
-                    .map(|asset| &asset.browser_download_url)
+                    }).map(|asset| &asset.browser_download_url)
                     .collect::<Vec<&String>>();
+                debug!("  collected release urls: {:?}", urls);
                 match urls.len() {
                     0 => Err(err_msg("no usable download url")),
                     1 => Ok(Url::parse(urls[0])?),
@@ -154,6 +157,7 @@ impl GithubReleaser {
     }
 
     fn latest_version(&self) -> Result<Version, Error> {
+        debug!("starting latest_version");
         if self.latest_release.borrow().is_none() {
             self.latest_release_data()?;
         }
@@ -165,6 +169,7 @@ impl GithubReleaser {
             .map(|r| Version::parse(&r.tag_name).ok())
             .ok_or_else(|| err_msg("Couldn't parse fetched version."))?
             .unwrap();
+        debug!("  latest version: {:?}", latest_version);
         Ok(latest_version)
     }
 }
@@ -206,7 +211,8 @@ pub mod tests {
         assert!(
             releaser
                 .latest_version()
-                .expect("couldn't do latest_version") > Version::from((0, 11, 0))
+                .expect("couldn't do latest_version")
+                > Version::from((0, 11, 0))
         );
 
         assert_eq!("http://127.0.0.1:1234/releases/download/v0.11.1/alfred-pinboard-rust-v0.11.1.alfredworkflow",
@@ -218,8 +224,8 @@ pub mod tests {
             "GET",
             Matcher::Regex(r"^/releases/(latest|download).*$".to_string()),
         ).with_status(status_code)
-            .with_header("content-type", "application/json")
-            .with_body(include_str!("../../tests/latest.json"))
-            .create()
+        .with_header("content-type", "application/json")
+        .with_body(include_str!("../../tests/latest.json"))
+        .create()
     }
 }

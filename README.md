@@ -6,7 +6,8 @@
 Write [Workflows][] for [Alfred][alfred.app] app with ease!
 
 This crate adds enhanced features and quality-of-life improvements to
-[other alfred crate][alfred]'s basic functionality of creating **Script Filter** items.
+[other alfred crate][alfred]'s basic functionality of generating items
+for **Script Filter** types in Alfred.
 
 Using this crate to create your workflows, you can
 - Set up automatic update of workflow ([`updater`] module).

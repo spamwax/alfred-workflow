@@ -355,6 +355,9 @@ where
     /// [`try_update_ready()`]: struct.Updater.html#method.try_update_ready
     /// [`UPDATE_INTERVAL`]: constant.UPDATE_INTERVAL.html
     pub fn init(&self) -> Result<(), Error> {
+        let _ = env_logger::try_init();
+
+        debug!("entering init");
         use self::imp::LATEST_UPDATE_INFO_CACHE_FN_ASYNC;
         use std::sync::mpsc;
 
@@ -368,10 +371,13 @@ where
             self.save()?;
             // This send is always successful
             tx.send(Ok(None)).unwrap();
+            debug!("  last check was set to now()");
         } else if self.due_to_check() {
             // it's time to talk to remote server
+            debug!(" calling start_releaser_worker");
             self.start_releaser_worker(tx, p)?;
         } else {
+            debug!("  calling read_last_check_status");
             let status = Self::read_last_check_status(&p)
                 .map(|last_check| {
                     last_check.and_then(|info| {
@@ -382,11 +388,12 @@ where
                             None
                         }
                     })
-                })
-                .or(Ok(None));
+                }).or(Ok(None));
+            debug!("  status: {:?}", status);
             tx.send(status).unwrap();
         }
         *self.state.borrow_worker_mut() = Some(imp::MPSCState::new(rx));
+        debug!("successfully set the state of release worker");
         Ok(())
     }
 
@@ -726,8 +733,7 @@ where
                         err_msg(
                             "missing env variable for cache dir. forgot to set workflow bundle id?",
                         )
-                    })
-                    .and_then(|mut cache_dir| {
+                    }).and_then(|mut cache_dir| {
                         cache_dir
                             .push(["latest_release_", &workflow_name, ".alfredworkflow"].concat());
                         Ok(cache_dir)
@@ -739,8 +745,7 @@ where
                         let mut buf_writer = BufWriter::with_capacity(0x10_0000, fp);
                         resp.copy_to(&mut buf_writer)?;
                         Ok(())
-                    })
-                    .or_else(|e: Error| {
+                    }).or_else(|e: Error| {
                         let _ = remove_file(&latest_release_downloaded_fn);
                         Err(e)
                     })?;
