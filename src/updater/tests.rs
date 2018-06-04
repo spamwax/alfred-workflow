@@ -192,7 +192,7 @@ fn it_does_one_network_call_per_interval() {
             updater.init().expect("couldn't init worker");
             assert!(updater.due_to_check());
 
-            // Since server is returning error, update_ready() should fail.
+            // Since server is ok, update_ready() should work.
             let t = updater.update_ready();
             assert_eq!(true, t.is_ok());
             assert_eq!(

@@ -175,7 +175,6 @@ where
     // Save updater's state
     pub(super) fn save(&self) -> Result<(), Error> {
         let data_file_path = Self::build_data_fn()?;
-        // println!("saving to ==> {:?}", data_file_path.parent());
         ::Data::save_to_file(&data_file_path, &self.state).or_else(|e| {
             let _ = remove_file(data_file_path);
             Err(e)
@@ -205,7 +204,6 @@ where
             let outcome = talk_to_mother();
 
             if let Err(error) = outcome {
-                print!("worker outcome is error: {:?}", error);
                 tx.send(Err(error))
                     .expect("could not send error from thread");
             }
@@ -268,10 +266,10 @@ where
                         .and_then(|rx| {
                             let rr = if try_flag {
                                 // don't block while trying to receive
-                                rx.try_recv().map_err(|e| err_msg(format!("{}", e)))
+                                rx.try_recv().map_err(|e| err_msg(e.to_string()))
                             } else {
                                 // block while waiting to receive
-                                rx.recv().map_err(|e| err_msg(format!("{}", e)))
+                                rx.recv().map_err(|e| err_msg(e.to_string()))
                             };
                             rr.and_then(|msg| {
                                 let msg_status = msg.map(|update_info| {
@@ -366,7 +364,7 @@ where
             let now = Utc::now();
             let payload = {
                 let mut info = UpdateInfo::new(v, url);
-                info.set_fetched_at(now.clone());
+                info.set_fetched_at(now);
                 Some(info)
             };
 

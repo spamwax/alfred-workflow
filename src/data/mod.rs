@@ -21,7 +21,7 @@
 //! // Load the workflow data (or create a new one)
 //! let mut workflow_data = Data::load().unwrap();
 //!
-//! // Set **and** save key/value `user_id: 0xFF` pair
+//! // Set *and* save key/value `user_id: 0xFF` pair
 //! workflow_data.set("user_id", &0xFF);
 //!
 //! // We can set/save different data types.
@@ -33,7 +33,7 @@
 //! let last_use: DateTime<Utc> =
 //!     workflow_data.get("last_use_date").expect("timestamp was not set");
 //!
-//! // Additioanlly, you can save temporarilyy data to workflow's cache folder:
+//! // Additioanlly, you can save temporary data to workflow's cache folder:
 //! Data::save_to_file("all_my_tweets.cache", &vec!["chirp1", "chirp2"]).unwrap();
 //! ```
 //!
