@@ -282,6 +282,7 @@ mod tests {
     use std::ffi::OsStr;
     use std::fs::remove_file;
     use std::path::PathBuf;
+    use std::{thread, time};
     use tempfile::Builder;
 
     #[test]
@@ -332,6 +333,27 @@ mod tests {
         let what_now: DateTime<Utc> =
             Data::load_from_file(path).expect("couldn't get value from test file");
         assert_eq!(now, what_now);
+    }
+
+    #[test]
+    fn it_overwrites_cached_data_file() {
+        let wfc = setup_workflow_env_vars(true);
+        let path = wfc.join("_test_it_overwrites_cached_data_file");
+        let _ = remove_file(&path);
+
+        let ten_millis = time::Duration::from_millis(10);
+
+        let now1 = Utc::now();
+        Data::save_to_file(&path, &now1).expect("couldn't write to file");
+
+        thread::sleep(ten_millis);
+
+        let now2 = Utc::now();
+        Data::save_to_file(&path, &now2).expect("couldn't write to file");
+
+        let what_now: DateTime<Utc> =
+            Data::load_from_file(path).expect("couldn't get value from test file");
+        assert_eq!(now2, what_now);
     }
 
     pub(super) fn setup_workflow_env_vars(secure_temp_dir: bool) -> PathBuf {
