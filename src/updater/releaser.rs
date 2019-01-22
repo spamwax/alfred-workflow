@@ -133,7 +133,8 @@ impl GithubReleaser {
                 err_msg(
                 "no release item available, did you first get version by calling latest_version?",
             )
-            }).and_then(|r| {
+            })
+            .and_then(|r| {
                 let urls = r
                     .assets
                     .iter()
@@ -141,7 +142,8 @@ impl GithubReleaser {
                         asset.state == "uploaded"
                             && (asset.browser_download_url.ends_with("alfredworkflow")
                                 || asset.browser_download_url.ends_with("alfred3workflow"))
-                    }).map(|asset| &asset.browser_download_url)
+                    })
+                    .map(|asset| &asset.browser_download_url)
                     .collect::<Vec<&String>>();
                 debug!("  collected release urls: {:?}", urls);
                 match urls.len() {
@@ -223,7 +225,8 @@ pub mod tests {
         mock(
             "GET",
             Matcher::Regex(r"^/releases/(latest|download).*$".to_string()),
-        ).with_status(status_code)
+        )
+        .with_status(status_code)
         .with_header("content-type", "application/json")
         .with_body(include_str!("../../tests/latest.json"))
         .create()

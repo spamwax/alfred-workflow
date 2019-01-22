@@ -20,6 +20,10 @@
 //! [alfred.app]: http://www.alfredapp.com
 //! [Workflows]: https://www.alfredapp.com/workflows/
 //!
+
+// TODO: check for "status" field of json returned by github to make sure it is fully uploaded
+// before reporting that a release is available.
+
 #![doc(html_root_url = "https://docs.rs/alfred-rs/0.4.0")]
 
 extern crate alfred;

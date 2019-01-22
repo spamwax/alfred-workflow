@@ -388,7 +388,8 @@ where
                             None
                         }
                     })
-                }).or(Ok(None));
+                })
+                .or(Ok(None));
             debug!("  status: {:?}", status);
             tx.send(status).unwrap();
         }
@@ -733,7 +734,8 @@ where
                         err_msg(
                             "missing env variable for cache dir. forgot to set workflow bundle id?",
                         )
-                    }).and_then(|mut cache_dir| {
+                    })
+                    .and_then(|mut cache_dir| {
                         cache_dir
                             .push(["latest_release_", &workflow_name, ".alfredworkflow"].concat());
                         Ok(cache_dir)
@@ -745,7 +747,8 @@ where
                         let mut buf_writer = BufWriter::with_capacity(0x10_0000, fp);
                         resp.copy_to(&mut buf_writer)?;
                         Ok(())
-                    }).or_else(|e: Error| {
+                    })
+                    .or_else(|e: Error| {
                         let _ = remove_file(&latest_release_downloaded_fn);
                         Err(e)
                     })?;

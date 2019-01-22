@@ -133,11 +133,9 @@ fn it_get_latest_info_from_releaser() {
         let wait = time::Duration::from_millis(100);
         thread::sleep(wait);
 
-        assert!(
-            updater
-                .try_update_ready()
-                .expect("couldn't check for update")
-        );
+        assert!(updater
+            .try_update_ready()
+            .expect("couldn't check for update"));
     }
 }
 
