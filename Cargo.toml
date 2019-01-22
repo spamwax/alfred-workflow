@@ -1,6 +1,6 @@
 [package]
 name = "alfred-rs"
-version = "0.4.0" # update html_root_url & README.md
+version = "0.4.2" # update html_root_url & README.md
 authors = ["Hamid Ghadyani <hamid@hamid.cc>"]
 description = """
 Write Alfred workflows easily.
@@ -26,14 +26,14 @@ serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
 alfred = "4.0"
-failure = "0.1.1"
+failure = "0.1.5"
 log = "0.4"
-env_logger = "0.5.3"
+env_logger = "0.6"
 
 
 chrono = { version = "0.4", features = ["serde"], optional = true }
 reqwest = { version = "0.8", optional = true }
-url = { version = "1.5", optional = true }
+url = { version = "1.7", optional = true }
 url_serde = { version = "0.2.0", optional = true }
 semver = {version = "0.9", features = ["serde"], optional = true }
 time = { version = "0.1", optional = true }
