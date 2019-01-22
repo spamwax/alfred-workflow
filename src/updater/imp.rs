@@ -118,14 +118,11 @@ where
     pub(super) fn load_or_new(r: T) -> Result<Self, Error> {
         let _ = env_logger::try_init();
         if let Ok(mut saved_state) = Self::load() {
-            // Overwrite saved state's current_version if the version that
-            // may have been set through env. variable is semantically
-            // newer than version saved in state.
+            // Use the version that workflow reports through environment variable
+            // This version takes priortiy over what we may have saved last time.
             let env_ver = env::workflow_version().and_then(|v| Version::parse(&v).ok());
             if let Some(v) = env_ver {
-                if v > saved_state.current_version {
-                    saved_state.current_version = v;
-                }
+                saved_state.current_version = v;
             }
             Ok(Updater {
                 state: saved_state,
@@ -191,6 +188,7 @@ where
         let releaser = (*self.releaser.borrow()).clone();
 
         thread::Builder::new().spawn(move || {
+            debug!("other thread: starting in updater thread");
             let talk_to_mother = || -> Result<(), Error> {
                 let (v, url) = releaser.latest_release()?;
                 let mut info = UpdateInfo::new(v, url);
@@ -202,6 +200,7 @@ where
             };
 
             let outcome = talk_to_mother();
+            debug!("other thread: finished checking releaser status");
 
             if let Err(error) = outcome {
                 tx.send(Err(error))
