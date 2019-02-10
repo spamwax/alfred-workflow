@@ -1,6 +1,6 @@
 [package]
 name = "alfred-rs"
-version = "0.4.2" # update html_root_url & README.md
+version = "0.5.0" # update html_root_url & README.md
 authors = ["Hamid Ghadyani <hamid@hamid.cc>"]
 description = """
 Write Alfred workflows easily.

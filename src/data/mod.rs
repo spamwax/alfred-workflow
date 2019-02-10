@@ -19,7 +19,7 @@
 //! use alfred_rs::data::Data;
 //!
 //! // Load the workflow data (or create a new one)
-//! let mut workflow_data = Data::load().unwrap();
+//! let mut workflow_data = Data::load("settings.json").unwrap();
 //!
 //! // Set *and* save key/value `user_id: 0xFF` pair
 //! workflow_data.set("user_id", &0xFF);
@@ -52,13 +52,14 @@ use serde::Serialize;
 use serde_json::{from_value, to_value, Value};
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{BufReader, BufWriter, Read};
-use std::path::Path;
+use std::io::{BufReader, BufWriter};
+use std::path::{Path, PathBuf};
 
 /// Workflow data that will be persisted to disk
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug)]
 pub struct Data {
     inner: HashMap<String, Value>,
+    file_name: PathBuf,
 }
 
 impl Data {
@@ -69,11 +70,28 @@ impl Data {
     ///
     /// # Errors:
     /// This method can fail if any disk/IO error happens.
-    pub fn load() -> Result<Self, Error> {
-        Self::read_data_from_disk().or_else(|_| {
-            Ok(Data {
-                inner: HashMap::new(),
-            })
+    pub fn load<P: AsRef<Path>>(p: P) -> Result<Self, Error> {
+        if p.as_ref().as_os_str().is_empty() {
+            bail!("File name to load data from cannot be empty");
+        }
+
+        // Only use the file name section of input parameter. We will always save to Workflow's
+        // data dir
+        let filename = p
+            .as_ref()
+            .file_name()
+            .ok_or_else(|| err_msg("invalid file name"))?;
+        let wf_data_path = env::workflow_data().ok_or_else(|| {
+            err_msg("missing env variable for data dir. forgot to set workflow bundle id?")
+        })?;
+
+        let wf_data_fn = wf_data_path.join(filename);
+
+        let inner = Self::read_data_from_disk(&wf_data_fn)
+            .or_else(|_| -> Result<_, Error> { Ok(HashMap::new()) })?;
+        Ok(Data {
+            inner,
+            file_name: wf_data_fn,
         })
     }
 
@@ -92,7 +110,7 @@ impl Data {
     /// # use chrono::prelude::*;
     /// use alfred_rs::data::Data;
     ///
-    /// let mut workflow_data = Data::load().unwrap();
+    /// let mut workflow_data = Data::load("settings.json").unwrap();
     ///
     /// workflow_data.set("user_id", &0xFF);
     /// workflow_data.set("last_log_date", &Utc::now());
@@ -106,7 +124,7 @@ impl Data {
     {
         let v = to_value(v)?;
         self.inner.insert(k.into(), v);
-        self.write_data_to_disk()
+        Self::write_data_to_disk(&self.file_name, &self.inner)
     }
 
     /// Get (possible) value of key `k` from workflow's data file
@@ -124,7 +142,7 @@ impl Data {
     /// # use chrono::prelude::*;
     /// use alfred_rs::data::Data;
     ///
-    /// let wf_data = Data::load().unwrap();
+    /// let wf_data = Data::load("settings.json").unwrap();
     ///
     /// let id: i32 = wf_data.get("user_id").expect("user id was not set");
     /// let last_log: DateTime<Utc> = wf_data.get("last_log_date").expect("log date was not set");
@@ -178,11 +196,33 @@ impl Data {
                 err_msg("missing env variable for cache dir. forgot to set workflow bundle id?")
             })?;
         debug!("saving to: {}", p.to_str().expect(""));
-        File::create(p).map_err(|e| e.into()).and_then(|fp| {
-            let buf_writer = BufWriter::with_capacity(0x1000, fp);
-            serde_json::to_writer(buf_writer, data)?;
-            Ok(())
-        })
+        Self::write_data_to_disk(p, data)
+    }
+
+    fn write_data_to_disk<P, V>(p: P, data: &V) -> Result<(), Error>
+    where
+        P: AsRef<Path>,
+        V: Serialize,
+    {
+        env::workflow_cache()
+            .ok_or_else(|| {
+                err_msg("missing env variable for cache dir. forgot to set workflow bundle id?")
+            })
+            .and_then(|wf_cache_path| {
+                // TODO: We need to create a secure & unique temp file name here
+                // Write to a temp file first
+                let fn_temp = wf_cache_path.join("_temp-data_.json");
+                File::create(&fn_temp).and_then(|fp| {
+                    let buf_writer = BufWriter::with_capacity(0x1000, fp);
+                    serde_json::to_writer(buf_writer, data)?;
+                    Ok(())
+                })?;
+
+                // Rename over to main file name
+                use std::fs;
+                fs::rename(fn_temp, p)?;
+                Ok(())
+            })
     }
 
     /// Function to load some (temporary) data from file named `p` in workflow's cache dir
@@ -217,60 +257,18 @@ impl Data {
         let p = env::workflow_cache()
             .and_then(|wfc| p.as_ref().file_name().map(|name| wfc.join(name)))?;
         debug!("loading from: {}", p.to_str().expect(""));
-        File::open(p)
-            .and_then(|fp| {
-                let mut buf_reader = BufReader::with_capacity(0x1000, fp);
-                let mut content = String::with_capacity(0x1000);
-                buf_reader.read_to_string(&mut content)?;
-                let d: V = serde_json::from_str(&content)?;
-                Ok(d)
-            })
-            .ok()
+        Self::read_data_from_disk(&p).ok()
     }
 
-    fn read_data_from_disk() -> Result<Self, Error> {
-        env::workflow_data()
-            .ok_or_else(|| {
-                err_msg("missing env variable for data dir. forgot to set workflow bundle id?")
-            })
-            .and_then(|wf_data_path| {
-                let workflow_name = env::workflow_uid()
-                    .map(|ref uid| [uid, "-persistent-data.json"].concat())
-                    .unwrap_or_else(|| "unnamed_workflow".to_string());
-                let wf_data_fn = wf_data_path.join(workflow_name);
-                File::open(wf_data_fn).map_err(|e| e.into()).and_then(|fp| {
-                    let mut buf_reader = BufReader::with_capacity(0x1000, fp);
-                    let mut content = String::with_capacity(0x1000);
-                    buf_reader.read_to_string(&mut content)?;
-                    let d: Self = serde_json::from_str(&content)?;
-                    Ok(d)
-                })
-            })
-    }
-
-    fn write_data_to_disk(&self) -> Result<(), Error> {
-        env::workflow_data()
-            .ok_or_else(|| {
-                err_msg("missing env variable for data dir. forgot to set workflow bundle id?")
-            })
-            .and_then(|wf_data_path| {
-                // Write to a temp file first
-                let wf_data_fn_temp = wf_data_path.join("temp_persistent-data.json");
-                File::create(&wf_data_fn_temp).and_then(|fp| {
-                    let buf_writer = BufWriter::with_capacity(0x1000, fp);
-                    serde_json::to_writer(buf_writer, &self)?;
-                    Ok(())
-                })?;
-
-                // Rename over to main file name
-                let workflow_name = env::workflow_uid()
-                    .map(|ref uid| [uid, "-persistent-data.json"].concat())
-                    .unwrap_or_else(|| "unnamed_workflow".to_string());
-                let wf_data_fn = wf_data_path.join(workflow_name);
-                use std::fs;
-                fs::rename(wf_data_fn_temp, wf_data_fn)?;
-                Ok(())
-            })
+    fn read_data_from_disk<V>(p: &PathBuf) -> Result<V, Error>
+    where
+        V: for<'d> Deserialize<'d>,
+    {
+        File::open(p).map_err(|e| e.into()).and_then(|fp| {
+            let buf_reader = BufReader::with_capacity(0x1000, fp);
+            let d: V = serde_json::from_reader(buf_reader)?;
+            Ok(d)
+        })
     }
 }
 
@@ -281,7 +279,6 @@ mod tests {
     use std::env as StdEnv;
     use std::ffi::OsStr;
     use std::fs::remove_file;
-    use std::path::PathBuf;
     use std::{thread, time};
     use tempfile::Builder;
 
@@ -301,8 +298,7 @@ mod tests {
         };
 
         {
-            let mut wf_data: Data = Data::load().unwrap();
-            println!("{:?}", wf_data);
+            let mut wf_data: Data = Data::load("settings_test.json").unwrap();
             wf_data.set("key1", &8).unwrap();
             wf_data.set("key2", &user).unwrap();
             wf_data.set("date", &Utc::now()).unwrap();
@@ -310,7 +306,7 @@ mod tests {
         }
 
         {
-            let wf_data = Data::load().unwrap();
+            let wf_data = Data::load("settings_test.json").unwrap();
 
             assert_eq!(3, wf_data.inner.len());
             let user: User = wf_data.get("key2").unwrap();
