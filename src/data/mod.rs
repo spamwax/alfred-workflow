@@ -201,28 +201,27 @@ impl Data {
 
     fn write_data_to_disk<P, V>(p: P, data: &V) -> Result<(), Error>
     where
-        P: AsRef<Path>,
+        P: AsRef<Path> + std::fmt::Debug,
         V: Serialize,
     {
-        env::workflow_cache()
-            .ok_or_else(|| {
-                err_msg("missing env variable for cache dir. forgot to set workflow bundle id?")
-            })
-            .and_then(|wf_cache_path| {
-                // TODO: We need to create a secure & unique temp file name here
-                // Write to a temp file first
-                let fn_temp = wf_cache_path.join("_temp-data_.json");
-                File::create(&fn_temp).and_then(|fp| {
-                    let buf_writer = BufWriter::with_capacity(0x1000, fp);
-                    serde_json::to_writer(buf_writer, data)?;
-                    Ok(())
-                })?;
+        use tempfile::Builder;
+        let named_tempfile = Builder::new()
+            .prefix("alfred_rs_temp")
+            .suffix(".json")
+            .rand_bytes(5)
+            .tempfile()?;
 
-                // Rename over to main file name
-                use std::fs;
-                fs::rename(fn_temp, p)?;
-                Ok(())
-            })
+        let fn_temp = named_tempfile.as_ref();
+        File::create(&fn_temp).and_then(|fp| {
+            let buf_writer = BufWriter::with_capacity(0x1000, fp);
+            serde_json::to_writer(buf_writer, data)?;
+            Ok(())
+        })?;
+
+        // Rename over to main file name
+        use std::fs;
+        fs::rename(fn_temp, p)?;
+        Ok(())
     }
 
     /// Function to load some (temporary) data from file named `p` in workflow's cache dir

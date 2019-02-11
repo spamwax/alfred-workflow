@@ -34,8 +34,6 @@ extern crate serde_json;
 
 #[cfg(test)]
 extern crate mockito;
-#[cfg(test)]
-extern crate tempfile;
 
 #[macro_use]
 extern crate log;
@@ -45,6 +43,7 @@ extern crate reqwest;
 extern crate semver;
 #[macro_use]
 extern crate serde_derive;
+extern crate tempfile;
 extern crate time;
 extern crate url;
 extern crate url_serde;
