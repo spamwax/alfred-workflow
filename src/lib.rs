@@ -24,7 +24,7 @@
 // TODO: check for "status" field of json returned by github to make sure it is fully uploaded
 // before reporting that a release is available.
 
-#![doc(html_root_url = "https://docs.rs/alfred-rs/0.4.0")]
+#![doc(html_root_url = "https://docs.rs/alfred-rs/0.4.3")]
 
 extern crate alfred;
 #[macro_use]
