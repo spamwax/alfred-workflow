@@ -35,11 +35,7 @@ alfred-rs = "0.4"
 
 ## Changelog
 
-- 0.4
-  - #### Breaking changes
-    - Methods that save data now accept `ref` instead of moving the value to be save.
-  - #### Bug fix
-    - Checking for updates will now correctly make network calls after prior failures.
+Change logs are now kept in a [separate document](./CHANGELOG.md)
 
 ## License
 
