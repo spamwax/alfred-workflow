@@ -65,8 +65,8 @@ pub struct Data {
 impl Data {
     /// Loads the workflow data or creates a new one.
     ///
-    /// Reads the content of workflow's standard data file `WORKFLOW_UID-persistent-data.json`.
-    /// If the file is missing or corrupt a new (empty) data will be produced.
+    /// Reads the data stored in `p` file..
+    /// If the file is missing or corrupt a new (empty) Data instance will be returned.
     ///
     /// # Errors:
     /// This method can fail if any disk/IO error happens.
@@ -127,7 +127,7 @@ impl Data {
         Self::write_data_to_disk(&self.file_name, &self.inner)
     }
 
-    /// Get (possible) value of key `k` from workflow's data file
+    /// Get (possible) value of key `k` from workflow's data
     ///
     /// If key `k` has not been set before `None` will be returned.
     ///
@@ -173,7 +173,7 @@ impl Data {
     /// Data::save_to_file("cached_tags.dat", &vec!["rust", "alfred"]).unwrap();
     /// ```
     /// ## Note
-    /// Only the [`file_name`] portion of `p` will be used to name the file in
+    /// Only the [`file_name`] portion of `p` will be used to name the file that'll be stored in
     /// workflow's cache directory.
     /// # Errors
     /// File IO related issues as well as serializing problems will cause an error to be returned.
@@ -242,8 +242,8 @@ impl Data {
     /// ```
     ///
     /// ## Note
-    /// Only the [`file_name`] portion of `p` will be used to name the file in
-    /// workflow's cache directory.
+    /// Only the [`file_name`] portion of `p` will be used to name the file, which will then be
+    /// looked up in workflow's cache directory.
     ///
     /// [`set`]: struct.Data.html#method.set
     /// [`get`]: struct.Data.html#method.get
