@@ -23,8 +23,9 @@
 
 // TODO: check for "status" field of json returned by github to make sure it is fully uploaded
 // before reporting that a release is available.
+// TODO: Automatically update html_root_url's version when publishing to crates.io
 
-#![doc(html_root_url = "https://docs.rs/alfred-rs/0.4.3")]
+#![doc(html_root_url = "https://docs.rs/alfred-rs/0.5.1")]
 
 extern crate alfred;
 #[macro_use]

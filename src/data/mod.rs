@@ -205,11 +205,14 @@ impl Data {
         V: Serialize,
     {
         use tempfile::Builder;
+        let wfc = env::workflow_cache().ok_or_else(|| {
+            err_msg("missing env variable for cache dir. forgot to set workflow bundle id?")
+        })?;
         let named_tempfile = Builder::new()
             .prefix("alfred_rs_temp")
             .suffix(".json")
             .rand_bytes(5)
-            .tempfile()?;
+            .tempfile_in(wfc)?;
 
         let fn_temp = named_tempfile.as_ref();
         File::create(&fn_temp).and_then(|fp| {

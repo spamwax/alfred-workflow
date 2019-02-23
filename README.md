@@ -35,7 +35,7 @@ alfred-rs = "0.4"
 
 ## Changelog
 
-Change logs are now kept in a [separate document](./CHANGELOG.md)
+Change logs are now kept in a [separate document](./CHANGELOG.md).
 
 ## License
 
