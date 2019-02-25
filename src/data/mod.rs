@@ -65,7 +65,9 @@ pub struct Data {
 impl Data {
     /// Loads the workflow data or creates a new one.
     ///
-    /// Reads the data stored in `p` file..
+    /// Reads the data stored in `p` file.
+    /// Only file name section of `p` is used as data will be always saved
+    /// in workflow's default data dir.
     /// If the file is missing or corrupt a new (empty) Data instance will be returned.
     ///
     /// # Errors:
@@ -155,6 +157,11 @@ impl Data {
         self.inner
             .get(k.as_ref())
             .and_then(|v| from_value(v.clone()).ok())
+    }
+
+    /// Clear all key-value pairs. Does not affect data on disk.
+    pub fn clear(&mut self) {
+        self.inner.clear()
     }
 
     /// Function to save (temporary) `data` to file named `p` in workflow's cache dir

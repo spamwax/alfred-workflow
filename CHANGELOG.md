@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 - **Breaking Change**: `Data::load()` now takes one argument as the file name.
+- Add a clear() method to Data struct.
 
 ### Changed
 - Use Workflow's cache directory for storing temp. files
