@@ -30,7 +30,7 @@ Add the following to your `Cargo.toml` file:
 ```toml
 [dependencies]
 
-alfred-rs = "0.4"
+alfred-rs = "0.5"
 ```
 
 ## Changelog
