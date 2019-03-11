@@ -24,6 +24,7 @@
 // TODO: check for "status" field of json returned by github to make sure it is fully uploaded
 // before reporting that a release is available.
 // TODO: Automatically update html_root_url's version when publishing to crates.io
+// TODO: Use https://github.com/softprops/hubcaps for github API?
 
 #![doc(html_root_url = "https://docs.rs/alfred-rs/0.5.1")]
 
