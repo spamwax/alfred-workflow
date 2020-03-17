@@ -48,3 +48,7 @@ updater = ["chrono", "reqwest", "semver", "time", "url", "url_serde"]
 
 # are we testing on CI?
 ci = ["updater"]
+
+[package.metadata.docs.rs]
+targets = ["x86_64-apple-ios", "x86_64-apple-darwin"]
+
