@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 - Clean-up tests.
+- GithubReleaser now prefers urls ending with .alfredworkflow
 
 ## [0.5.1] - 2019-02-24
 ### Changed

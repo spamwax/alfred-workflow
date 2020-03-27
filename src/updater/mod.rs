@@ -534,9 +534,6 @@ where
     ///
     /// This method is provided so workflow authors can set the version from within the Rust code.
     ///
-    /// For example, by reading cargo or git info during compile time and using this method to
-    /// assign the version to workflow.
-    ///
     /// # Example
     ///
     /// ```rust

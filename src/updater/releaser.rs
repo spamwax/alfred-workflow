@@ -122,7 +122,7 @@ impl GithubReleaser {
             })
     }
 
-    // This implementation of Releaser will favor urls that end with `alfred3workflow`
+    // This implementation of Releaser will favor urls that end with `alfredworkflow`
     // over `alfredworkflow`
     fn downloadable_url(&self) -> Result<Url, Error> {
         debug!("starting download_url");
@@ -141,7 +141,8 @@ impl GithubReleaser {
                     .filter(|asset| {
                         asset.state == "uploaded"
                             && (asset.browser_download_url.ends_with("alfredworkflow")
-                                || asset.browser_download_url.ends_with("alfred3workflow"))
+                                || asset.browser_download_url.ends_with("alfred3workflow")
+                                || asset.browser_download_url.ends_with("alfred4workflow"))
                     })
                     .map(|asset| &asset.browser_download_url)
                     .collect::<Vec<&String>>();
@@ -150,7 +151,7 @@ impl GithubReleaser {
                     0 => Err(err_msg("no usable download url")),
                     1 => Ok(Url::parse(urls[0])?),
                     _ => {
-                        let url = urls.iter().find(|item| item.ends_with("alfred3workflow"));
+                        let url = urls.iter().find(|item| item.ends_with("alfredworkflow"));
                         let u = url.unwrap_or(&urls[0]);
                         Ok(Url::parse(u)?)
                     }
