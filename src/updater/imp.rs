@@ -3,7 +3,7 @@ use std::cell::Cell;
 use std::cell::Ref;
 use std::cell::RefMut;
 use std::sync::mpsc;
-use Updater;
+use crate::Updater;
 
 pub(super) const LATEST_UPDATE_INFO_CACHE_FN_ASYNC: &str = "last_check_status_async.json";
 
@@ -165,14 +165,14 @@ where
 
     fn load() -> Result<UpdaterState, Error> {
         let data_file_path = Self::build_data_fn()?;
-        ::Data::load_from_file(data_file_path)
+        crate::Data::load_from_file(data_file_path)
             .ok_or_else(|| err_msg("cannot load cached state of updater"))
     }
 
     // Save updater's state
     pub(super) fn save(&self) -> Result<(), Error> {
         let data_file_path = Self::build_data_fn()?;
-        ::Data::save_to_file(&data_file_path, &self.state).or_else(|e| {
+        crate::Data::save_to_file(&data_file_path, &self.state).or_else(|e| {
             let _ = remove_file(data_file_path);
             Err(e)
         })
@@ -215,7 +215,7 @@ where
         p: &PathBuf,
         updater_info: &Option<UpdateInfo>,
     ) -> Result<(), Error> {
-        ::Data::save_to_file(p, updater_info).or_else(|e| {
+        crate::Data::save_to_file(p, updater_info).or_else(|e| {
             let _ = remove_file(p);
             Err(e)
         })
@@ -223,7 +223,7 @@ where
 
     // read version of latest avail. release (if any) from a cache file
     pub(super) fn read_last_check_status(p: &PathBuf) -> Result<Option<UpdateInfo>, Error> {
-        ::Data::load_from_file(p).ok_or_else(|| err_msg("no data in given path"))
+        crate::Data::load_from_file(p).ok_or_else(|| err_msg("no data in given path"))
     }
 
     pub(super) fn build_data_fn() -> Result<PathBuf, Error> {

@@ -121,7 +121,7 @@
 //! by Alfred until the operation succeeds.
 
 use chrono::prelude::*;
-use env;
+use crate::env;
 use env_logger;
 use failure::{err_msg, Error};
 use reqwest;
