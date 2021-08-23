@@ -8,6 +8,8 @@ Write Alfred workflows easily.
 https://www.alfredapp.com
 """
 
+# edition = "2018"
+
 documentation = "https://docs.rs/alfred-rs/"
 homepage = "https://github.com/spamwax/alfred-workflow"
 repository = "https://github.com/spamwax/alfred-workflow"
@@ -26,14 +28,14 @@ serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
 alfred = "4.0"
-failure = "0.1.5"
+failure = "0.1"
 log = "0.4"
-env_logger = "0.6"
+env_logger = "0.9"
 tempfile = "^3.0"
 
 
 chrono = { version = "0.4", features = ["serde"], optional = true }
-reqwest = { version = "0.8", optional = true }
+reqwest = { version = "0.9", optional = true }
 url = { version = "1.7", optional = true }
 url_serde = { version = "0.2.0", optional = true }
 semver = {version = "0.9", features = ["serde"], optional = true }
