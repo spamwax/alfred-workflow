@@ -1,7 +1,7 @@
 # alfred-rs
 
 [![Build Status](https://travis-ci.org/spamwax/alfred-workflow.svg?branch=master)](https://travis-ci.org/spamwax/alfred-workflow)
-[![crates.io/crates/alfred-rs](http://meritbadge.herokuapp.com/alfred-rs)](https://crates.io/crates/alfred-rs)
+[![crates.io/crates/alfred-rs](https://img.shields.io/crates/v/alfred-rs)](https://crates.io/crates/alfred-rs)
 [![https://docs.rs/alfred-rs/badge.svg](https://docs.rs/alfred-rs/badge.svg)](https://docs.rs/crate/alfred-rs/)
 
 Write [Workflows][] for [Alfred][alfred.app] app with ease!
