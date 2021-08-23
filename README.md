@@ -24,16 +24,6 @@ For examples and complete documentation visit [API Documentation][].
 [Workflows]: https://www.alfredapp.com/workflows/
 [API Documentation]: http://docs.rs/alfred-rs
 
-## Installation
-
-Add the following to your `Cargo.toml` file:
-
-```toml
-[dependencies]
-
-alfred-rs = "0.5"
-```
-
 ## Changelog
 
 Change logs are now kept in a [separate document](./CHANGELOG.md).
