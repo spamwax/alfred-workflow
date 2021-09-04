@@ -265,7 +265,7 @@ impl Data {
         Self::read_data_from_disk(&p).ok()
     }
 
-    fn read_data_from_disk<V>(p: &PathBuf) -> Result<V, Error>
+    fn read_data_from_disk<V>(p: &Path) -> Result<V, Error>
     where
         V: for<'d> Deserialize<'d>,
     {
@@ -383,5 +383,4 @@ mod tests {
         }
         path
     }
-
 }

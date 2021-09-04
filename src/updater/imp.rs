@@ -1,9 +1,10 @@
 use super::*;
+use crate::Updater;
 use std::cell::Cell;
 use std::cell::Ref;
 use std::cell::RefMut;
+use std::path::Path;
 use std::sync::mpsc;
-use crate::Updater;
 
 pub(super) const LATEST_UPDATE_INFO_CACHE_FN_ASYNC: &str = "last_check_status_async.json";
 
@@ -67,8 +68,6 @@ pub(super) struct UpdateInfo {
     // Link to use to download the above version
     #[serde(with = "url_serde")]
     pub downloadable_url: Url,
-
-    _priv: (),
 }
 
 impl UpdateInfo {
@@ -77,7 +76,6 @@ impl UpdateInfo {
             version: v,
             fetched_at: None,
             downloadable_url: url,
-            _priv: (),
         }
     }
 
@@ -172,9 +170,9 @@ where
     // Save updater's state
     pub(super) fn save(&self) -> Result<(), Error> {
         let data_file_path = Self::build_data_fn()?;
-        crate::Data::save_to_file(&data_file_path, &self.state).or_else(|e| {
+        crate::Data::save_to_file(&data_file_path, &self.state).map_err(|e| {
             let _ = remove_file(data_file_path);
-            Err(e)
+            e
         })
     }
 
@@ -212,17 +210,17 @@ where
 
     // write version of latest avail. release (if any) to a cache file
     pub(super) fn write_last_check_status(
-        p: &PathBuf,
+        p: &Path,
         updater_info: &Option<UpdateInfo>,
     ) -> Result<(), Error> {
-        crate::Data::save_to_file(p, updater_info).or_else(|e| {
+        crate::Data::save_to_file(p, updater_info).map_err(|e| {
             let _ = remove_file(p);
-            Err(e)
+            e
         })
     }
 
     // read version of latest avail. release (if any) from a cache file
-    pub(super) fn read_last_check_status(p: &PathBuf) -> Result<Option<UpdateInfo>, Error> {
+    pub(super) fn read_last_check_status(p: &Path) -> Result<Option<UpdateInfo>, Error> {
         crate::Data::load_from_file(p).ok_or_else(|| err_msg("no data in given path"))
     }
 
@@ -240,11 +238,11 @@ where
             .and_then(|mut data_path| {
                 env::workflow_uid()
                     .ok_or_else(|| err_msg("missing env variable for uid"))
-                    .and_then(|ref uid| {
+                    .map(|ref uid| {
                         let filename = [uid, "-", workflow_name.as_str(), "-updater.json"].concat();
                         data_path.push(filename);
 
-                        Ok(data_path)
+                        data_path
                     })
             })
     }

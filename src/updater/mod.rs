@@ -120,8 +120,8 @@
 //! In this case, the above snippet will try to call server every time workflow is invoked
 //! by Alfred until the operation succeeds.
 
-use chrono::prelude::*;
 use crate::env;
+use chrono::prelude::*;
 use env_logger;
 use failure::{err_msg, Error};
 use reqwest;
@@ -732,10 +732,10 @@ where
                             "missing env variable for cache dir. forgot to set workflow bundle id?",
                         )
                     })
-                    .and_then(|mut cache_dir| {
+                    .map(|mut cache_dir| {
                         cache_dir
                             .push(["latest_release_", &workflow_name, ".alfredworkflow"].concat());
-                        Ok(cache_dir)
+                        cache_dir
                     })?;
                 // Save the file
                 File::create(&latest_release_downloaded_fn)
@@ -745,9 +745,9 @@ where
                         resp.copy_to(&mut buf_writer)?;
                         Ok(())
                     })
-                    .or_else(|e: Error| {
+                    .map_err(|e: Error| {
                         let _ = remove_file(&latest_release_downloaded_fn);
-                        Err(e)
+                        e
                     })?;
                 Ok(latest_release_downloaded_fn)
             })
