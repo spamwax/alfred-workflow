@@ -13,7 +13,6 @@
 //!
 //! # Example
 //! ```rust,no_run
-//! # extern crate alfred_rs;
 //! extern crate chrono;
 //! # use chrono::prelude::*;
 //! use alfred_rs::data::Data;
@@ -107,7 +106,6 @@ impl Data {
     ///
     /// # Example
     /// ```rust,no_run
-    /// # extern crate alfred_rs;
     /// # extern crate chrono;
     /// # use chrono::prelude::*;
     /// use alfred_rs::data::Data;
@@ -139,7 +137,6 @@ impl Data {
     ///
     /// # Example
     /// ```rust,no_run
-    /// # extern crate alfred_rs;
     /// # extern crate chrono;
     /// # use chrono::prelude::*;
     /// use alfred_rs::data::Data;
@@ -172,7 +169,6 @@ impl Data {
     ///
     /// # Example
     /// ```rust,no_run
-    /// # extern crate alfred_rs;
     /// use alfred_rs::data::Data;
     ///
     /// Data::save_to_file("cached_tags.dat", &vec!["rust", "alfred"]).unwrap();
@@ -241,7 +237,6 @@ impl Data {
     /// # Example
     ///
     /// ```rust,no_run
-    /// # extern crate alfred_rs;
     /// use alfred_rs::data::Data;
     ///
     /// let cached_tags: Vec<String> = Data::load_from_file("cached_tags.dat").unwrap();
