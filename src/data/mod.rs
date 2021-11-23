@@ -102,8 +102,8 @@ impl Data {
     /// `k` is a type that implements `Into<String>`. `v` can be any type as long as it
     /// implements `Serialize`.
     ///
-    /// This method overwrites values of any existing keys, otherwise adds the key/value pair
-    /// to the workflow's standard data file
+    /// This method overwrites values of any existing keys, otherwise adds
+    /// the key/value pair to the workflow's standard data file
     ///
     /// # Example
     /// ```rust,no_run
