@@ -1,4 +1,4 @@
-//! Helper for enabling Alfred workflows to upgrade themselves periodically (Alfred 3)
+//! Helper for enabling Alfred workflows to upgrade themselves periodically (Alfred 3+)
 //!
 //! Using this module, the workflow author can make Alfred check for latest releases
 //! ([`try_update_ready()`] or [`update_ready()`]) from a remote server within adjustable intervals
