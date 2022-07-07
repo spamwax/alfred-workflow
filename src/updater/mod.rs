@@ -57,7 +57,7 @@
 //! To change the interval, use [`set_interval()`] method.
 //!
 //! ```rust,no_run
-//! # extern crate failure;
+//! # use anyhow::Result;
 //! extern crate alfred;
 //!
 //! // This crate
@@ -67,7 +67,6 @@
 //! use alfred_rs::Updater;
 //!
 //! # use std::io;
-//! # use failure::Error;
 //! # fn produce_items_for_user_to_see<'a>() -> Vec<Item<'a>> {
 //! #     Vec::new()
 //! # }
@@ -221,7 +220,7 @@ where
     /// ```rust,no_run
     /// # extern crate alfred_rs;
     /// # extern crate semver;
-    /// # extern crate failure;
+    /// # use anyhow::Result;
     /// # extern crate url;
     ///
     /// use url::Url;
@@ -230,7 +229,6 @@ where
     /// use alfred_rs::Updater;
     /// use alfred_rs::updater::Releaser;
     /// # use std::env;
-    /// # use failure::Error;
     /// # fn main() {
     ///
     /// #[derive(Clone)]
@@ -305,8 +303,7 @@ where
     ///
     /// ```rust,no_run
     /// # extern crate alfred_rs;
-    /// # extern crate failure;
-    /// # use failure::Error;
+    /// # use anyhow::Result;
     /// # use alfred_rs::Updater;
     /// # use std::env;
     /// # fn do_some_other_stuff() {}
@@ -426,10 +423,9 @@ where
     ///
     /// ```no_run
     /// # extern crate alfred_rs;
-    /// # extern crate failure;
+    /// # use anyhow::Result;
     /// use alfred_rs::Updater;
     ///
-    /// # use failure::Error;
     /// # use std::io;
     /// # fn main() {
     /// let updater =
@@ -486,11 +482,10 @@ where
     ///
     /// ```no_run
     /// extern crate alfred_rs;
-    /// # extern crate failure;
+    /// # use anyhow::Result;
     ///
     /// use alfred_rs::Updater;
     ///
-    /// # use failure::Error;
     /// # use std::io;
     ///
     /// # fn do_some_other_stuff() {}
@@ -537,10 +532,9 @@ where
     ///
     /// ```rust
     /// # extern crate alfred_rs;
-    /// # extern crate failure;
+    /// # use anyhow::Result;
     /// # use alfred_rs::Updater;
     /// # use std::env;
-    /// # use failure::Error;
     /// # fn ex_set_version() -> Result<()> {
     /// # env::set_var("alfred_workflow_uid", "abcdef");
     /// # env::set_var("alfred_workflow_data", env::temp_dir());
@@ -605,9 +599,8 @@ where
     ///
     /// ```rust,no_run
     /// # extern crate alfred_rs;
-    /// # extern crate failure;
+    /// # use anyhow::Result;
     /// # use alfred_rs::Updater;
-    /// # use failure::Error;
     /// # fn run() -> Result<()> {
     /// let mut updater = Updater::gh("spamwax/alfred-pinboard-rs")?;
     ///
@@ -664,7 +657,7 @@ where
     /// ```rust,no_run
     /// # extern crate alfred;
     /// # extern crate alfred_rs;
-    /// # extern crate failure;
+    /// # use anyhow::Result;
     /// # use std::io;
     /// use alfred_rs::Updater;
     /// use alfred::{ItemBuilder, json};

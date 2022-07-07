@@ -55,7 +55,7 @@ fn it_ignores_saved_version_after_an_upgrade_async() {
 }
 
 #[test]
-#[should_panic(expected = "Error(Status(400), \"http://127.0.0.1:1234/releases/latest\")")]
+#[should_panic(expected = "http://127.0.0.1:1234/releases/latest: Client Error: 400 Bad Request")]
 fn it_handles_server_error_async() {
     setup_workflow_env_vars(true);
     first_check_after_installing_workflow();
