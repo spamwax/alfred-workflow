@@ -73,7 +73,7 @@
 //! # }
 //! # fn do_some_other_stuff() {}
 //! // Our workflow's main 'runner' function
-//! fn run<'a>() -> Result<Vec<Item<'a>>, Error> {
+//! fn run<'a>() -> Result<Vec<Item<'a>>> {
 //!     let updater = Updater::gh("spamwax/alfred-pinboard-rs")?;
 //!
 //!     // Start the process for getting latest release info
@@ -120,10 +120,10 @@
 //! In this case, the above snippet will try to call server every time workflow is invoked
 //! by Alfred until the operation succeeds.
 
+use super::*;
 use crate::env;
 use chrono::prelude::*;
 use env_logger;
-use failure::{err_msg, Error};
 use reqwest;
 use semver::Version;
 use std::cell::RefCell;
@@ -135,7 +135,6 @@ use std::sync::mpsc::Receiver;
 use time::Duration;
 use url::Url;
 use url_serde;
-
 mod imp;
 mod releaser;
 
@@ -195,7 +194,7 @@ impl Updater<GithubReleaser> {
     /// [`update_ready()`]: struct.Updater.html#method.update_ready
     /// [`try_update_ready()`]: struct.Updater.html#method.try_update_ready
     /// [`download_latest()`]: struct.Updater.html#method.download_latest
-    pub fn gh<S>(repo_name: S) -> Result<Self, Error>
+    pub fn gh<S>(repo_name: S) -> Result<Self>
     where
         S: Into<String>,
     {
@@ -246,7 +245,7 @@ where
     ///         MyPrivateHost {}
     ///     }
     ///
-    ///     fn fetch_latest_release(&self) -> Result<(Version, Url), Error> {
+    ///     fn fetch_latest_release(&self) -> Result<(Version, Url)> {
     ///         let version = Version::from((1, 0, 12));
     ///         let url = Url::parse("https://ci.remote.cc/release/latest")?;
     ///         Ok((version, url))
@@ -278,7 +277,7 @@ where
     /// [`Releaser`]: trait.Releaser.html
     /// [`GithubReleaser`]: struct.GithubReleaser.html
     /// [`gh()`]: struct.Updater.html#method.gh
-    pub fn new<S>(repo_name: S) -> Result<Updater<T>, Error>
+    pub fn new<S>(repo_name: S) -> Result<Updater<T>>
     where
         S: Into<String>,
     {
@@ -311,7 +310,7 @@ where
     /// # use alfred_rs::Updater;
     /// # use std::env;
     /// # fn do_some_other_stuff() {}
-    /// # fn test_async() -> Result<(), Error> {
+    /// # fn test_async() -> Result<()> {
     /// let updater = Updater::gh("spamwax/alfred-pinboard-rs")?;
     ///
     /// let rx = updater.init().expect("Error in starting updater.");
@@ -354,7 +353,7 @@ where
     /// [`update_ready()`]: struct.Updater.html#method.update_ready
     /// [`try_update_ready()`]: struct.Updater.html#method.try_update_ready
     /// [`UPDATE_INTERVAL`]: constant.UPDATE_INTERVAL.html
-    pub fn init(&self) -> Result<(), Error> {
+    pub fn init(&self) -> Result<()> {
         let _ = env_logger::try_init();
 
         debug!("entering init");
@@ -454,7 +453,7 @@ where
     /// [`init()`]: struct.Updater.html#method.init
     /// [`try_update_ready()`]: struct.Updater.html#method.try_update_ready
     /// [`UPDATE_INTERVAL`]: constant.UPDATE_INTERVAL.html
-    pub fn update_ready(&self) -> Result<bool, Error> {
+    pub fn update_ready(&self) -> Result<bool> {
         if self.state.borrow_worker().is_none() {
             bail!("update_ready_sync is deprecated. use init()");
         } else {
@@ -520,7 +519,7 @@ where
     ///
     /// [`init()`]: struct.Updater.html#method.init
     /// [`update_ready()`]: struct.Updater.html#method.update_ready
-    pub fn try_update_ready(&self) -> Result<bool, Error> {
+    pub fn try_update_ready(&self) -> Result<bool> {
         if self.state.borrow_worker().is_none() {
             bail!("update_ready_sync is deprecated. use init()");
         } else {
@@ -542,7 +541,7 @@ where
     /// # use alfred_rs::Updater;
     /// # use std::env;
     /// # use failure::Error;
-    /// # fn ex_set_version() -> Result<(), Error> {
+    /// # fn ex_set_version() -> Result<()> {
     /// # env::set_var("alfred_workflow_uid", "abcdef");
     /// # env::set_var("alfred_workflow_data", env::temp_dir());
     /// # env::set_var("alfred_workflow_version", "0.0.0");
@@ -609,7 +608,7 @@ where
     /// # extern crate failure;
     /// # use alfred_rs::Updater;
     /// # use failure::Error;
-    /// # fn run() -> Result<(), Error> {
+    /// # fn run() -> Result<()> {
     /// let mut updater = Updater::gh("spamwax/alfred-pinboard-rs")?;
     ///
     /// // Assuming it is has been UPDATE_INTERVAL seconds since last time we ran the
@@ -707,11 +706,11 @@ where
     /// errors happen, or if [`Releaser`] cannot produce a usable download url.
     ///
     /// [`Releaser`]: trait.Releaser.html
-    pub fn download_latest(&self) -> Result<PathBuf, Error> {
+    pub fn download_latest(&self) -> Result<PathBuf> {
         let url = self
             .state
             .download_url()
-            .ok_or_else(|| err_msg("no release info avail yet"))?;
+            .ok_or_else(|| anyhow!("no release info avail yet"))?;
         let client = reqwest::Client::new();
 
         client
@@ -728,7 +727,7 @@ where
                     .collect::<String>();
                 let latest_release_downloaded_fn = env::workflow_cache()
                     .ok_or_else(|| {
-                        err_msg(
+                        anyhow!(
                             "missing env variable for cache dir. forgot to set workflow bundle id?",
                         )
                     })
@@ -745,7 +744,7 @@ where
                         resp.copy_to(&mut buf_writer)?;
                         Ok(())
                     })
-                    .map_err(|e: Error| {
+                    .map_err(|e: anyhow::Error| {
                         let _ = remove_file(&latest_release_downloaded_fn);
                         e
                     })?;

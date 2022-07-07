@@ -9,7 +9,7 @@ use std::sync::mpsc;
 pub(super) const LATEST_UPDATE_INFO_CACHE_FN_ASYNC: &str = "last_check_status_async.json";
 
 // Payload that the worker thread will send back
-type ReleasePayloadResult = Result<Option<UpdateInfo>, Error>;
+type ReleasePayloadResult = Result<Option<UpdateInfo>>;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(super) struct UpdaterState {
@@ -113,7 +113,7 @@ impl<T> Updater<T>
 where
     T: Releaser + Send + 'static,
 {
-    pub(super) fn load_or_new(r: T) -> Result<Self, Error> {
+    pub(super) fn load_or_new(r: T) -> Result<Self> {
         let _ = env_logger::try_init();
         if let Ok(mut saved_state) = Self::load() {
             // Use the version that workflow reports through environment variable
@@ -161,14 +161,14 @@ where
         self.state.update_interval = t;
     }
 
-    fn load() -> Result<UpdaterState, Error> {
+    fn load() -> Result<UpdaterState> {
         let data_file_path = Self::build_data_fn()?;
         crate::Data::load_from_file(data_file_path)
-            .ok_or_else(|| err_msg("cannot load cached state of updater"))
+            .ok_or_else(|| anyhow!("cannot load cached state of updater"))
     }
 
     // Save updater's state
-    pub(super) fn save(&self) -> Result<(), Error> {
+    pub(super) fn save(&self) -> Result<()> {
         let data_file_path = Self::build_data_fn()?;
         crate::Data::save_to_file(&data_file_path, &self.state).map_err(|e| {
             let _ = remove_file(data_file_path);
@@ -180,14 +180,14 @@ where
         &self,
         tx: mpsc::Sender<ReleasePayloadResult>,
         p: PathBuf,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         use std::thread;
 
         let releaser = (*self.releaser.borrow()).clone();
 
         thread::Builder::new().spawn(move || {
             debug!("other thread: starting in updater thread");
-            let talk_to_mother = || -> Result<(), Error> {
+            let talk_to_mother = || -> Result<()> {
                 let (v, url) = releaser.latest_release()?;
                 let mut info = UpdateInfo::new(v, url);
                 info.set_fetched_at(Utc::now());
@@ -212,7 +212,7 @@ where
     pub(super) fn write_last_check_status(
         p: &Path,
         updater_info: &Option<UpdateInfo>,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         crate::Data::save_to_file(p, updater_info).map_err(|e| {
             let _ = remove_file(p);
             e
@@ -220,11 +220,11 @@ where
     }
 
     // read version of latest avail. release (if any) from a cache file
-    pub(super) fn read_last_check_status(p: &Path) -> Result<Option<UpdateInfo>, Error> {
-        crate::Data::load_from_file(p).ok_or_else(|| err_msg("no data in given path"))
+    pub(super) fn read_last_check_status(p: &Path) -> Result<Option<UpdateInfo>> {
+        crate::Data::load_from_file(p).ok_or_else(|| anyhow!("no data in given path"))
     }
 
-    pub(super) fn build_data_fn() -> Result<PathBuf, Error> {
+    pub(super) fn build_data_fn() -> Result<PathBuf> {
         let workflow_name = env::workflow_name()
             .unwrap_or_else(|| "YouForgotTo/フ:NameYourOwnWork}flowッ".to_string())
             .chars()
@@ -233,11 +233,11 @@ where
 
         env::workflow_cache()
             .ok_or_else(|| {
-                err_msg("missing env variable for cache dir. forgot to set workflow bundle id?")
+                anyhow!("missing env variable for cache dir. forgot to set workflow bundle id?")
             })
             .and_then(|mut data_path| {
                 env::workflow_uid()
-                    .ok_or_else(|| err_msg("missing env variable for uid"))
+                    .ok_or_else(|| anyhow!("missing env variable for uid"))
                     .map(|ref uid| {
                         let filename = [uid, "-", workflow_name.as_str(), "-updater.json"].concat();
                         data_path.push(filename);
@@ -247,26 +247,26 @@ where
             })
     }
 
-    pub(super) fn update_ready_async(&self, try_flag: bool) -> Result<bool, Error> {
+    pub(super) fn update_ready_async(&self, try_flag: bool) -> Result<bool> {
         self.state
             .worker_state
             .borrow()
             .as_ref()
-            .ok_or_else(|| err_msg("you need to use init() method first."))
+            .ok_or_else(|| anyhow!("you need to use init() method first."))
             .and_then(|mpsc| {
                 if mpsc.recvd_payload.borrow().is_none() {
                     // No payload received yet, try to talk to worker thread
                     mpsc.rx
                         .borrow()
                         .as_ref()
-                        .ok_or_else(|| err_msg("you need to use init() correctly!"))
+                        .ok_or_else(|| anyhow!("you need to use init() correctly!"))
                         .and_then(|rx| {
                             let rr = if try_flag {
                                 // don't block while trying to receive
-                                rx.try_recv().map_err(|e| err_msg(e.to_string()))
+                                rx.try_recv().map_err(|e| anyhow!(e.to_string()))
                             } else {
                                 // block while waiting to receive
-                                rx.recv().map_err(|e| err_msg(e.to_string()))
+                                rx.recv().map_err(|e| anyhow!(e.to_string()))
                             };
                             rr.and_then(|msg| {
                                 let msg_status = msg.map(|update_info| {
@@ -304,7 +304,7 @@ where
     }
 
     #[allow(dead_code)]
-    pub(super) fn _update_ready_async(&self) -> Result<bool, Error> {
+    pub(super) fn _update_ready_async(&self) -> Result<bool> {
         let worker_state = self.state.worker_state.borrow();
         if worker_state.is_none() {
             panic!("you need to use init first")
@@ -322,12 +322,12 @@ where
                     *self.state.avail_release.borrow_mut() = update_info.clone();
                     *mpsc.recvd_payload.borrow_mut() = Some(Ok(update_info.clone()));
                 } else {
-                    return Err(err_msg(format!("{:?}", msg.as_ref().unwrap_err())));
+                    return Err(anyhow!(format!("{:?}", msg.as_ref().unwrap_err())));
                 }
                 self.save()?;
             } else {
                 eprintln!("{:?}", rr);
-                return Err(err_msg(format!("{:?}", rr)));
+                return Err(anyhow!(format!("{:?}", rr)));
             }
         }
         if let Some(ref updater_info) = *self.state.avail_release.borrow() {
@@ -342,7 +342,7 @@ where
     }
 
     #[allow(dead_code)]
-    pub(super) fn _update_ready_sync(&self) -> Result<bool, Error> {
+    pub(super) fn _update_ready_sync(&self) -> Result<bool> {
         // A None value for last_check indicates that workflow is being run for first time.
         // Thus we update last_check to now and just save the updater state without asking
         // Releaser to do a remote call/check for us since we assume that user just downloaded
@@ -354,7 +354,7 @@ where
 
         // make a network call to see if a newer version is avail.
         // save the result of call to cache file.
-        let ask_releaser_for_update = || -> Result<bool, Error> {
+        let ask_releaser_for_update = || -> Result<bool> {
             let (v, url) = self.releaser.borrow().latest_release()?;
             let update_avail = *self.current_version() < v;
 

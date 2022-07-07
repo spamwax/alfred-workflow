@@ -1,5 +1,4 @@
-use failure::err_msg;
-use failure::Error;
+use super::*;
 #[cfg(test)]
 use mockito;
 use reqwest;
@@ -45,13 +44,13 @@ pub trait Releaser: Clone {
     ///
     /// # Errors
     /// Method returns `Err(Error)` on file or network error.
-    fn fetch_latest_release(&self) -> Result<(Self::SemVersion, Self::DownloadLink), Error>;
+    fn fetch_latest_release(&self) -> Result<(Self::SemVersion, Self::DownloadLink)>;
 
     /// Returns the latest release information that is available from server.
     ///
     /// # Errors
     /// Method returns `Err(Error)` on file or network error.
-    fn latest_release(&self) -> Result<(Version, Url), Error> {
+    fn latest_release(&self) -> Result<(Version, Url)> {
         let (v, url) = self.fetch_latest_release()?;
         Ok((v.into(), url.into()))
     }
@@ -92,7 +91,7 @@ struct ReleaseAsset {
 }
 
 impl GithubReleaser {
-    fn latest_release_data(&self) -> Result<(), Error> {
+    fn latest_release_data(&self) -> Result<()> {
         debug!("starting latest_release_data");
         let client = reqwest::Client::new();
 
@@ -124,13 +123,13 @@ impl GithubReleaser {
 
     // This implementation of Releaser will favor urls that end with `alfredworkflow`
     // over `alfredworkflow`
-    fn downloadable_url(&self) -> Result<Url, Error> {
+    fn downloadable_url(&self) -> Result<Url> {
         debug!("starting download_url");
         self.latest_release
             .borrow()
             .as_ref()
             .ok_or_else(|| {
-                err_msg(
+                anyhow!(
                 "no release item available, did you first get version by calling latest_version?",
             )
             })
@@ -148,7 +147,7 @@ impl GithubReleaser {
                     .collect::<Vec<&String>>();
                 debug!("  collected release urls: {:?}", urls);
                 match urls.len() {
-                    0 => Err(err_msg("no usable download url")),
+                    0 => Err(anyhow!("no usable download url")),
                     1 => Ok(Url::parse(urls[0])?),
                     _ => {
                         let url = urls.iter().find(|item| item.ends_with("alfredworkflow"));
@@ -159,7 +158,7 @@ impl GithubReleaser {
             })
     }
 
-    fn latest_version(&self) -> Result<Version, Error> {
+    fn latest_version(&self) -> Result<Version> {
         debug!("starting latest_version");
         if self.latest_release.borrow().is_none() {
             self.latest_release_data()?;
@@ -170,7 +169,7 @@ impl GithubReleaser {
             .borrow()
             .as_ref()
             .map(|r| Version::parse(&r.tag_name).ok())
-            .ok_or_else(|| err_msg("Couldn't parse fetched version."))?
+            .ok_or_else(|| anyhow!("Couldn't parse fetched version."))?
             .unwrap();
         debug!("  latest version: {:?}", latest_version);
         Ok(latest_version)
@@ -188,7 +187,7 @@ impl Releaser for GithubReleaser {
         }
     }
 
-    fn fetch_latest_release(&self) -> Result<(Version, Url), Error> {
+    fn fetch_latest_release(&self) -> Result<(Version, Url)> {
         if self.latest_release.borrow().is_none() {
             self.latest_release_data()?;
         }

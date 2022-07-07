@@ -71,7 +71,7 @@ impl Data {
     ///
     /// # Errors:
     /// This method can fail if any disk/IO error happens.
-    pub fn load<P: AsRef<Path>>(p: P) -> Result<Self, Error> {
+    pub fn load<P: AsRef<Path>>(p: P) -> Result<Self> {
         if p.as_ref().as_os_str().is_empty() {
             bail!("File name to load data from cannot be empty");
         }
@@ -81,15 +81,15 @@ impl Data {
         let filename = p
             .as_ref()
             .file_name()
-            .ok_or_else(|| err_msg("invalid file name"))?;
+            .ok_or_else(|| anyhow!("invalid file name"))?;
         let wf_data_path = env::workflow_data().ok_or_else(|| {
-            err_msg("missing env variable for data dir. forgot to set workflow bundle id?")
+            anyhow!("missing env variable for data dir. forgot to set workflow bundle id?")
         })?;
 
         let wf_data_fn = wf_data_path.join(filename);
 
         let inner = Self::read_data_from_disk(&wf_data_fn)
-            .or_else(|_| -> Result<_, Error> { Ok(HashMap::new()) })?;
+            .or_else(|_| -> Result<_> { Ok(HashMap::new()) })?;
         Ok(Data {
             inner,
             file_name: wf_data_fn,
@@ -117,7 +117,7 @@ impl Data {
     /// ```
     /// # Errors:
     /// If `v` cannot be serialized or there are file IO issues an error is returned.
-    pub fn set<K, V>(&mut self, k: K, v: &V) -> Result<(), Error>
+    pub fn set<K, V>(&mut self, k: K, v: &V) -> Result<()>
     where
         K: Into<String>,
         V: Serialize,
@@ -182,7 +182,7 @@ impl Data {
     /// [`set`]: struct.Data.html#method.set
     /// [`get`]: struct.Data.html#method.get
     /// [`file_name`]: https://doc.rust-lang.org/std/path/struct.Path.html#method.file_name
-    pub fn save_to_file<P, V>(p: P, data: &V) -> Result<(), Error>
+    pub fn save_to_file<P, V>(p: P, data: &V) -> Result<()>
     where
         P: AsRef<Path>,
         V: Serialize,
@@ -190,24 +190,24 @@ impl Data {
         let filename = p
             .as_ref()
             .file_name()
-            .ok_or_else(|| err_msg("invalid file name"))?;
+            .ok_or_else(|| anyhow!("invalid file name"))?;
         let p = env::workflow_cache()
             .map(|wfc| wfc.join(filename))
             .ok_or_else(|| {
-                err_msg("missing env variable for cache dir. forgot to set workflow bundle id?")
+                anyhow!("missing env variable for cache dir. forgot to set workflow bundle id?")
             })?;
         debug!("saving to: {}", p.to_str().expect(""));
         Self::write_data_to_disk(p, data)
     }
 
-    fn write_data_to_disk<P, V>(p: P, data: &V) -> Result<(), Error>
+    fn write_data_to_disk<P, V>(p: P, data: &V) -> Result<()>
     where
         P: AsRef<Path> + std::fmt::Debug,
         V: Serialize,
     {
         use tempfile::Builder;
         let wfc = env::workflow_cache().ok_or_else(|| {
-            err_msg("missing env variable for cache dir. forgot to set workflow bundle id?")
+            anyhow!("missing env variable for cache dir. forgot to set workflow bundle id?")
         })?;
         let named_tempfile = Builder::new()
             .prefix("alfred_rs_temp")
@@ -260,7 +260,7 @@ impl Data {
         Self::read_data_from_disk(&p).ok()
     }
 
-    fn read_data_from_disk<V>(p: &Path) -> Result<V, Error>
+    fn read_data_from_disk<V>(p: &Path) -> Result<V>
     where
         V: for<'d> Deserialize<'d>,
     {
