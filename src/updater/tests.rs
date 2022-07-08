@@ -314,10 +314,7 @@ fn it_tests_async_updates_2() {
     // Increase interval
     updater.set_interval(86400);
 
-    assert_eq!(
-        true,
-        updater.update_ready().expect("couldn't check for update")
-    );
+    assert!(updater.update_ready().expect("couldn't check for update"));
 }
 
 pub(super) fn setup_workflow_env_vars(secure_temp_dir: bool) -> PathBuf {

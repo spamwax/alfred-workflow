@@ -710,7 +710,7 @@ where
             .get(url)
             .send()?
             .error_for_status()
-            .map_err(|e| e.into())
+            .map_err(Into::into)
             .and_then(|mut resp| {
                 // Get workflow's dedicated cache folder & build a filename
                 let workflow_name = env::workflow_name()
