@@ -133,7 +133,6 @@ use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
 use time::Duration;
 use url::Url;
-use url_serde;
 mod imp;
 mod releaser;
 
@@ -704,7 +703,7 @@ where
             .state
             .download_url()
             .ok_or_else(|| anyhow!("no release info avail yet"))?;
-        let client = reqwest::Client::new();
+        let client = reqwest::blocking::Client::new();
 
         client
             .get(url)

@@ -93,7 +93,7 @@ struct ReleaseAsset {
 impl GithubReleaser {
     fn latest_release_data(&self) -> Result<()> {
         debug!("starting latest_release_data");
-        let client = reqwest::Client::new();
+        let client = reqwest::blocking::Client::new();
 
         #[cfg(test)]
         let url = format!("{}{}", MOCKITO_URL, GITHUB_LATEST_RELEASE_ENDPOINT);

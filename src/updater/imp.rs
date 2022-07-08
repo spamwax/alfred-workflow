@@ -66,7 +66,6 @@ pub(super) struct UpdateInfo {
     pub fetched_at: Option<DateTime<Utc>>,
 
     // Link to use to download the above version
-    #[serde(with = "url_serde")]
     pub downloadable_url: Url,
 }
 
