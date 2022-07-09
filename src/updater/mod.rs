@@ -119,10 +119,9 @@
 //! In this case, the above snippet will try to call server every time workflow is invoked
 //! by Alfred until the operation succeeds.
 
-use super::*;
+use super::{anyhow, bail, chrono, env_logger, semver, serde_json, time, url, Result};
 use crate::env;
 use chrono::prelude::*;
-use env_logger;
 use reqwest;
 use semver::Version;
 use std::cell::RefCell;
@@ -349,12 +348,13 @@ where
     /// [`update_ready()`]: struct.Updater.html#method.update_ready
     /// [`try_update_ready()`]: struct.Updater.html#method.try_update_ready
     /// [`UPDATE_INTERVAL`]: constant.UPDATE_INTERVAL.html
+    #[allow(clippy::missing_panics_doc)]
     pub fn init(&self) -> Result<()> {
+        use self::imp::LATEST_UPDATE_INFO_CACHE_FN_ASYNC;
+        use std::sync::mpsc;
         let _ = env_logger::try_init();
 
         debug!("entering init");
-        use self::imp::LATEST_UPDATE_INFO_CACHE_FN_ASYNC;
-        use std::sync::mpsc;
 
         // file for status of last update check
         let p = Self::build_data_fn()?.with_file_name(LATEST_UPDATE_INFO_CACHE_FN_ASYNC);
@@ -451,9 +451,8 @@ where
     pub fn update_ready(&self) -> Result<bool> {
         if self.state.borrow_worker().is_none() {
             bail!("update_ready_sync is deprecated. use init()");
-        } else {
-            self.update_ready_async(false)
         }
+        self.update_ready_async(false)
     }
 
     /// Try to get release info from background worker and see if a new update is available (non-blocking).
@@ -516,9 +515,8 @@ where
     pub fn try_update_ready(&self) -> Result<bool> {
         if self.state.borrow_worker().is_none() {
             bail!("update_ready_sync is deprecated. use init()");
-        } else {
-            self.update_ready_async(true)
         }
+        self.update_ready_async(true)
     }
 
     /// Set workflow's version to `version`.
@@ -730,14 +728,14 @@ where
                     })?;
                 // Save the file
                 File::create(&latest_release_downloaded_fn)
-                    .map_err(|e| e.into())
+                    .map_err(Into::into)
                     .and_then(|fp| {
                         let mut buf_writer = BufWriter::with_capacity(0x10_0000, fp);
                         resp.copy_to(&mut buf_writer)?;
                         Ok(())
                     })
                     .map_err(|e: anyhow::Error| {
-                        let _ = remove_file(&latest_release_downloaded_fn);
+                        let _r = remove_file(&latest_release_downloaded_fn);
                         e
                     })?;
                 Ok(latest_release_downloaded_fn)

@@ -1,4 +1,7 @@
-use super::*;
+use super::{
+    anyhow, env, env_logger, remove_file, DateTime, PathBuf, Receiver, RefCell, Releaser, Result,
+    Url, Utc, Version, UPDATE_INTERVAL,
+};
 use crate::Updater;
 use std::cell::Cell;
 use std::cell::Ref;
@@ -170,7 +173,7 @@ where
     pub(super) fn save(&self) -> Result<()> {
         let data_file_path = Self::build_data_fn()?;
         crate::Data::save_to_file(&data_file_path, &self.state).map_err(|e| {
-            let _ = remove_file(data_file_path);
+            let _r = remove_file(data_file_path);
             e
         })
     }
@@ -213,7 +216,7 @@ where
         updater_info: &Option<UpdateInfo>,
     ) -> Result<()> {
         crate::Data::save_to_file(p, updater_info).map_err(|e| {
-            let _ = remove_file(p);
+            let _r = remove_file(p);
             e
         })
     }
@@ -278,7 +281,7 @@ where
                                                 || self.last_check().as_ref().unwrap()
                                                     < fetched_time
                                             {
-                                                self.set_last_check(*fetched_time)
+                                                self.set_last_check(*fetched_time);
                                             }
                                         })
                                     });
@@ -298,16 +301,13 @@ where
             .avail_release
             .borrow()
             .as_ref()
-            .map(|release| *self.current_version() < release.version)
-            .unwrap_or(false))
+            .map_or(false, |release| *self.current_version() < release.version))
     }
 
     #[allow(dead_code)]
     pub(super) fn _update_ready_async(&self) -> Result<bool> {
         let worker_state = self.state.worker_state.borrow();
-        if worker_state.is_none() {
-            panic!("you need to use init first")
-        };
+        assert!(worker_state.is_some(), "you need to use init first");
 
         let mpsc = worker_state.as_ref().expect("no worker_state");
         if mpsc.recvd_payload.borrow().is_none() {
@@ -341,6 +341,7 @@ where
     }
 
     #[allow(dead_code)]
+    #[deprecated(note = "update_ready_sync is deprecated. use init()")]
     pub(super) fn _update_ready_sync(&self) -> Result<bool> {
         // A None value for last_check indicates that workflow is being run for first time.
         // Thus we update last_check to now and just save the updater state without asking
@@ -383,9 +384,10 @@ where
         } else {
             Self::read_last_check_status(&p)
                 .map(|last_check_status| {
-                    last_check_status
-                        .map(|last_update_info| *self.current_version() < last_update_info.version)
-                        .unwrap_or(false)
+                    last_check_status.map_or(false, |last_update_info| {
+                        *self.current_version() < last_update_info.version
+                    })
+                    // .unwrap_or(false)
                 })
                 .or(Ok(false))
         }

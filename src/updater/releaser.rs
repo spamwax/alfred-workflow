@@ -1,9 +1,7 @@
-use super::*;
+use super::{anyhow, reqwest, semver, serde_json, url, Result};
 #[cfg(test)]
 use mockito;
-use reqwest;
 use semver::Version;
-use serde_json;
 use std::cell::RefCell;
 use url::Url;
 
@@ -65,6 +63,7 @@ pub trait Releaser: Clone {
 /// See [`updater::gh()`] for how to use this.
 ///
 /// [`updater::gh()`]: struct.Updater.html#method.gh
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GithubReleaser {
     repo: String,
@@ -109,7 +108,7 @@ impl GithubReleaser {
             .get(&url)
             .send()?
             .error_for_status()
-            .map_err(|e| e.into())
+            .map_err(Into::into)
             .and_then(|resp| {
                 let mut latest: ReleaseItem = serde_json::from_reader(resp)?;
                 if latest.tag_name.starts_with('v') {

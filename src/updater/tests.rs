@@ -32,10 +32,7 @@ fn it_ignores_saved_version_after_an_upgrade_async() {
         updater.set_interval(0);
         updater.init().expect("couldn't init worker");
 
-        assert_eq!(
-            true,
-            updater.update_ready().expect("couldn't check for update")
-        );
+        assert!(updater.update_ready().expect("couldn't check for update"));
         assert_eq!(VERSION_TEST, format!("{}", updater.current_version()));
     }
 
@@ -47,10 +44,7 @@ fn it_ignores_saved_version_after_an_upgrade_async() {
         assert_eq!(VERSION_TEST_NEW, format!("{}", updater.current_version()));
         updater.init().expect("couldn't init worker");
         // No more updates
-        assert_eq!(
-            false,
-            updater.update_ready().expect("couldn't check for update")
-        );
+        assert!(!updater.update_ready().expect("couldn't check for update"));
     }
 }
 
@@ -81,32 +75,20 @@ fn it_caches_async_workers_payload() {
     // Next check will be immediate
     updater.set_interval(0);
     updater.init().expect("couldn't init worker");
-    assert_eq!(
-        true,
-        updater.update_ready().expect("couldn't check for update"),
-    );
+    assert!(updater.update_ready().expect("couldn't check for update"),);
 
     // Consequent calls to update_ready should cache the payload.
     let _m = setup_mock_server(400);
-    assert_eq!(
-        true,
-        updater.update_ready().expect("couldn't check for update"),
-    );
-    assert_eq!(
-        true,
-        updater.update_ready().expect("couldn't check for update"),
-    );
-    assert_eq!(
-        true,
-        updater.update_ready().expect("couldn't check for update"),
-    );
+    assert!(updater.update_ready().expect("couldn't check for update"),);
+    assert!(updater.update_ready().expect("couldn't check for update"),);
+    assert!(updater.update_ready().expect("couldn't check for update"),);
 
     {
         let mut updater = Updater::gh(MOCK_RELEASER_REPO_NAME).expect("cannot build Updater");
         // Next check will be immediate
         updater.set_interval(0);
         updater.init().expect("couldn't init worker");
-        assert_eq!(true, updater.update_ready().is_err());
+        assert!(updater.update_ready().is_err());
     }
 }
 
@@ -141,6 +123,7 @@ fn it_get_latest_info_from_releaser() {
     }
 }
 
+#[allow(clippy::cast_possible_wrap)]
 #[test]
 fn it_does_one_network_call_per_interval() {
     {
@@ -168,7 +151,7 @@ fn it_does_one_network_call_per_interval() {
         let t = updater.update_ready();
         assert!(t.is_ok());
         // Make sure we still report update is ready
-        assert_eq!(true, t.unwrap());
+        assert!(t.unwrap());
 
         // Now we test that after interval has passed we will make a call
         let two_sec = time::Duration::from_secs(wait_time);
@@ -181,7 +164,7 @@ fn it_does_one_network_call_per_interval() {
 
             // Since server is returning error, update_ready() should fail.
             let t = updater.update_ready();
-            assert_eq!(true, t.is_err());
+            assert!(t.is_err());
         }
         {
             // Just making sure the next call will go through and return expected results.
@@ -194,11 +177,8 @@ fn it_does_one_network_call_per_interval() {
 
             // Since server is ok, update_ready() should work.
             let t = updater.update_ready();
-            assert_eq!(true, t.is_ok());
-            assert_eq!(
-                true,
-                updater.update_ready().expect("couldn't check for update")
-            );
+            assert!(t.is_ok());
+            assert!(updater.update_ready().expect("couldn't check for update"));
         }
     }
 }
@@ -218,10 +198,7 @@ fn it_tests_download() {
     updater.init().expect("couldn't init worker");
 
     // New update is available
-    assert_eq!(
-        true,
-        updater.update_ready().expect("couldn't check for update")
-    );
+    assert!(updater.update_ready().expect("couldn't check for update"));
 
     let download_fn = updater.download_latest();
     assert!(download_fn.is_ok());
@@ -244,19 +221,16 @@ fn it_doesnt_download_without_release_info() {
     first_check_after_installing_workflow();
 
     let mut updater = Updater::gh(MOCK_RELEASER_REPO_NAME).expect("cannot build Updater");
-    updater.set_interval(864000);
+    updater.set_interval(864_000);
 
-    assert_eq!(false, updater.due_to_check());
+    assert!(!updater.due_to_check());
     updater.init().expect("couldn't init worker");
 
     assert!(updater.download_latest().is_err());
 
     // Since check time is due yet, following will just read cache without
     // getting any release info, hence the last line should panic
-    assert_eq!(
-        false,
-        updater.update_ready().expect("couldn't check for update")
-    );
+    assert!(updater.update_ready().expect("couldn't check for update"));
     updater.download_latest().unwrap();
 }
 
@@ -271,10 +245,7 @@ fn it_downloads_after_getting_release_info() {
     updater.init().expect("couldn't init worker");
     assert!(updater.download_latest().is_err());
 
-    assert_eq!(
-        true,
-        updater.update_ready().expect("couldn't check for update")
-    );
+    assert!(updater.update_ready().expect("couldn't check for update"));
     assert!(updater.download_latest().is_ok());
 }
 
@@ -289,10 +260,7 @@ fn it_tests_async_updates_1() {
     // Next check will be immediate
     updater.set_interval(0);
     updater.init().expect("couldn't init worker");
-    assert_eq!(
-        true,
-        updater.update_ready().expect("couldn't check for update")
-    );
+    assert!(updater.update_ready().expect("couldn't check for update"));
 }
 
 #[test]
@@ -357,8 +325,5 @@ fn first_check_after_installing_workflow() {
     updater.init().expect("couldn't init worker");
 
     // First update_ready is always false.
-    assert_eq!(
-        false,
-        updater.update_ready().expect("couldn't check for update")
-    );
+    assert!(updater.update_ready().expect("couldn't check for update"));
 }

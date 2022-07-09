@@ -44,7 +44,7 @@
 //! [`save_to_file()`]: struct.Data.html#method.save_to_file
 //! [`load_from_file()`]: struct.Data.html#method.load_from_file
 //! [documentation]: struct.Data.html
-use super::*;
+use super::{anyhow, bail, env, serde, serde_json, tempfile, Result};
 
 use serde::Deserialize;
 use serde::Serialize;
@@ -69,7 +69,7 @@ impl Data {
     /// in workflow's default data dir.
     /// If the file is missing or corrupt a new (empty) Data instance will be returned.
     ///
-    /// # Errors:
+    /// # Errors
     /// This method can fail if any disk/IO error happens.
     pub fn load<P: AsRef<Path>>(p: P) -> Result<Self> {
         if p.as_ref().as_os_str().is_empty() {
@@ -115,7 +115,8 @@ impl Data {
     /// workflow_data.set("user_id", &0xFF);
     /// workflow_data.set("last_log_date", &Utc::now());
     /// ```
-    /// # Errors:
+    /// # Errors
+    ///
     /// If `v` cannot be serialized or there are file IO issues an error is returned.
     pub fn set<K, V>(&mut self, k: K, v: &V) -> Result<()>
     where
@@ -158,7 +159,7 @@ impl Data {
 
     /// Clear all key-value pairs. Does not affect data on disk.
     pub fn clear(&mut self) {
-        self.inner.clear()
+        self.inner.clear();
     }
 
     /// Function to save (temporary) `data` to file named `p` in workflow's cache dir
@@ -205,6 +206,7 @@ impl Data {
         P: AsRef<Path> + std::fmt::Debug,
         V: Serialize,
     {
+        use std::fs;
         use tempfile::Builder;
         let wfc = env::workflow_cache().ok_or_else(|| {
             anyhow!("missing env variable for cache dir. forgot to set workflow bundle id?")
@@ -223,7 +225,6 @@ impl Data {
         })?;
 
         // Rename over to main file name
-        use std::fs;
         fs::rename(fn_temp, p)?;
         Ok(())
     }
@@ -264,7 +265,7 @@ impl Data {
     where
         V: for<'d> Deserialize<'d>,
     {
-        File::open(p).map_err(|e| e.into()).and_then(|fp| {
+        File::open(p).map_err(Into::into).and_then(|fp| {
             let buf_reader = BufReader::with_capacity(0x1000, fp);
             let d: V = serde_json::from_reader(buf_reader)?;
             Ok(d)
@@ -322,7 +323,7 @@ mod tests {
     fn it_saves_loads_from_file() {
         let wfc = setup_workflow_env_vars(true);
         let path = wfc.join("_test_saves_loads_from_file");
-        let _ = remove_file(&path);
+        let _r = remove_file(&path);
 
         let now = Utc::now();
         Data::save_to_file(&path, &now).expect("couldn't write to file");
@@ -335,7 +336,7 @@ mod tests {
     fn it_overwrites_cached_data_file() {
         let wfc = setup_workflow_env_vars(true);
         let path = wfc.join("_test_it_overwrites_cached_data_file");
-        let _ = remove_file(&path);
+        let _r = remove_file(&path);
 
         let ten_millis = time::Duration::from_millis(10);
 
