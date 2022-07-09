@@ -5,11 +5,9 @@ on:
     branches:
       - develop
       - master
-    tags:
-      - '*'
-  # pull_request:
-  #   branches:
-  #     - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
   Lint:

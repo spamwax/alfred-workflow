@@ -1,4 +1,4 @@
-name: build/test
+name: Test
 
 on:
   push:
@@ -13,9 +13,11 @@ on:
 
 env:
   RELEASE_COMMIT: ${{ github.ref_type == 'tag' }}
+  CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
 
 jobs:
-  Test:
+  Build:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -58,10 +60,19 @@ jobs:
         with:
           command: test
           args: --features updater --doc
-
-  # Audit:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v1
-  #     - uses: EmbarkStudios/cargo-deny-action@v1
-
+  Publish:
+    runs-on: macos-latest
+    # if: ${{ github.ref_type == 'tag' }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+      - name: Setup Rust linting tools
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - name: Publish to crates.io
+        run: .github/workflows/run_tests.sh
+        # run: cargo publish --all-features
+        # run: CARGO_REGISTRY_TOKEN=${{ secrets.CARGO_REGISTRY_TOKEN }} cargo publish --all-features
