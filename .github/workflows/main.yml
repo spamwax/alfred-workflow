@@ -1,4 +1,4 @@
-name: Built, test and lint
+name: build/test
 
 on:
   push:
@@ -58,30 +58,6 @@ jobs:
         with:
           command: test
           args: --features updater --doc
-
-  Lint:
-    runs-on: ubuntu-latest
-    if: ${{ github.ref_type == 'tag' }}
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v2
-      - name: Setup Rust linting tools
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-          components: rustfmt, clippy
-      - name: Run cargo fmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
-      - name: Run full pedantic clippy lints
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --tests --workspace -- -Dclippy::all -Dclippy::pedantic -D warnings
 
   # Audit:
   #   runs-on: ubuntu-latest
