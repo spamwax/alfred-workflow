@@ -631,13 +631,13 @@ where
     ///
     /// Within shell, it can be installed by issuing something like:
     /// ```bash
-    /// open -b com.runningwithcrayons.Alfred-3 latest_release_WORKFLOW-NAME.alfredworkflow
+    /// open -b com.runningwithcrayons.Alfred latest_release_WORKFLOW-NAME.alfredworkflow
     /// ```
     ///
     /// Or you can add "Run script" object to your workflow and use environment variables set by
     /// Alfred to automatically open the downloaded release:
     /// ```bash
-    /// open -b com.runningwithcrayons.Alfred-3 "$alfred_workflow_cache/latest_release_$alfred_workflow_name.alfredworkflow"
+    /// open -b com.runningwithcrayons.Alfred "$alfred_workflow_cache/latest_release_$alfred_workflow_name.alfredworkflow"
     /// ```
     ///
     /// # Note
@@ -751,9 +751,6 @@ where
     /// So it is possible the method will return a version different than server's version if:
     /// - It's been less than [`UPDATE_INTERVAL`] seconds since last check, or
     /// - Worker thread is busy checking and you called this method before it finishes.
-    ///
-    /// Limit calling this method after [`update_ready()`] or [`try_update_ready()`] indicates that
-    /// a new version is available.
     ///
     /// [`Releaser`]: trait.Releaser.html
     /// [`UPDATE_INTERVAL`]: constant.UPDATE_INTERVAL.html

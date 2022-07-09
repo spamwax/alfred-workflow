@@ -305,6 +305,7 @@ where
     }
 
     #[allow(dead_code)]
+    #[deprecated(note = "update_ready_async is deprecated. use init()")]
     pub(super) fn _update_ready_async(&self) -> Result<bool> {
         let worker_state = self.state.worker_state.borrow();
         assert!(worker_state.is_some(), "you need to use init first");
