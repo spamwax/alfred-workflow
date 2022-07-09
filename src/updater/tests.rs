@@ -116,7 +116,7 @@ fn it_get_latest_info_from_releaser() {
         updater.set_interval(0);
         // Start async worker
         updater.init().expect("couldn't init worker");
-        let wait = time::Duration::from_millis(100);
+        let wait = time::Duration::from_millis(500);
         thread::sleep(wait);
 
         assert!(updater
