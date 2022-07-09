@@ -64,7 +64,7 @@ jobs:
 
   Lint:
     runs-on: ubuntu-latest
-    if: ${{ env.RELEASE_COMMIT == 'true' }}
+    if: ${{ github.ref_type == 'tag' }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v2
