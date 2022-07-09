@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replace failure crate with anyhow for error handling.
 - Upgrade/Update reqwest, url crate
 - Update some docs
+- minimum rustc version is 1.56
+- Bump version of dependencies in Cargo.toml
+- Use github's actions for CI test.
 
 ## [0.6.0] - 2021-06-01
 ### Changed
