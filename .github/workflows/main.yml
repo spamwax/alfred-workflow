@@ -47,18 +47,18 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-      - name: Set RUST_TEST_NOCAPTURE
-        run: echo "RUST_TEST_NOCAPTURE=1" >> $GITHUB_ENV
+      - name: Set RUST_TEST_{NOCAPTURE, THREADS}
+        run: echo "RUST_TEST_NOCAPTURE=1" >> $GITHUB_ENV && echo "RUST_TEST_THREADS=1" >> $GITHUB_ENV
       - name: Run test suits in modules (${{ matrix.os }}-${{ matrix.rust }})
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --features updater --lib -- --test-threads=1
+          args: --features updater --lib
       - name: Run doc tests (${{ matrix.os }}-${{ matrix.rust }})
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --features updater --doc -- --test-threads=1
+          args: --features updater --doc
       # - name: Test (${{ matrix.os }}-${{ matrix.rust}})
       #   run: .github/workflows/run_tests.sh
 
@@ -82,7 +82,6 @@ jobs:
           args: --all -- --check
       - name: Run full pedantic clippy lints
         uses: actions-rs/cargo@v1
-        # if: ${{ env.RELEASE_COMMIT == 'true' }}
         with:
           command: clippy
           args: --tests --workspace -- -Dclippy::all -Dclippy::pedantic -D warnings
