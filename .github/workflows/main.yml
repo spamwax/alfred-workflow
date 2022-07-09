@@ -21,8 +21,7 @@ jobs:
   Build:
     strategy:
       matrix:
-        # os: [ubuntu-latest, macos-latest]
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, macos-latest]
         rust: [1.56.0, stable]
         exclude:
           - os: ubuntu-latest
