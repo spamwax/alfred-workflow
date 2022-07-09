@@ -64,7 +64,6 @@ jobs:
 
   Lint:
     runs-on: ubuntu-latest
-    if: ${{ env.RELEASE_COMMIT == 'true' }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v2
@@ -77,11 +76,13 @@ jobs:
           components: rustfmt, clippy
       - name: Run cargo fmt
         uses: actions-rs/cargo@v1
+        if: ${{ env.RELEASE_COMMIT == 'true' }}
         with:
           command: fmt
           args: --all -- --check
       - name: Run full pedantic clippy lints
         uses: actions-rs/cargo@v1
+        if: ${{ env.RELEASE_COMMIT == 'true' }}
         if: always()
         with:
           command: clippy
