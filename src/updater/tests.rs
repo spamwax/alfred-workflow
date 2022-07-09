@@ -105,7 +105,9 @@ fn it_get_latest_info_from_releaser() {
         updater.set_interval(0);
         updater.init().expect("couldn't init worker");
 
-        assert!(updater.update_ready().expect("couldn't check for update"));
+        assert!(updater
+            .update_ready()
+            .expect("Blocking: couldn't check for update"));
     }
     {
         // Non-blocking
@@ -119,7 +121,7 @@ fn it_get_latest_info_from_releaser() {
 
         assert!(updater
             .try_update_ready()
-            .expect("couldn't check for update"));
+            .expect("Non-blocking: couldn't check for update"));
     }
 }
 
