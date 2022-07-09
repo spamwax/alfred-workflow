@@ -18,13 +18,13 @@ jobs:
   Test:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest]
         rust: [1.56.0, stable]
         exclude:
           - os: ubuntu-latest
             rust: 1.56.0
-          - os: windows-latest
-            rust: 1.56.0
+          # - os: windows-latest
+          #   rust: 1.56.0
           # - os: ubuntu-latest
           #   rust: nightly
           # - os: windows-latest
