@@ -8,7 +8,7 @@ Write Alfred workflows easily.
 https://www.alfredapp.com
 """
 
-edition = "2021"
+edition = "2018"
 
 documentation = "https://docs.rs/alfred-rs/"
 homepage = "https://github.com/spamwax/alfred-workflow"
@@ -48,7 +48,7 @@ default = ["updater"]
 updater = ["chrono", "reqwest", "semver", "time", "url"]
 
 # are we testing on CI?
-ci = ["updater"]
+# ci = ["updater"]
 
 [package.metadata.docs.rs]
 targets = ["x86_64-apple-darwin", "x86_64-apple-ios"]

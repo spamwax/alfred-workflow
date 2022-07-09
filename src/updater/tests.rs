@@ -1,5 +1,5 @@
 use self::releaser::tests::setup_mock_server;
-#[cfg(not(feature = "ci"))]
+// #[cfg(not(feature = "ci"))]
 use self::releaser::GithubReleaser;
 use self::releaser::MOCK_RELEASER_REPO_NAME;
 use super::*;
