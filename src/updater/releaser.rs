@@ -1,10 +1,7 @@
-use failure::err_msg;
-use failure::Error;
+use super::{anyhow, reqwest, semver, serde_json, url, Result};
 #[cfg(test)]
 use mockito;
-use reqwest;
 use semver::Version;
-use serde_json;
 use std::cell::RefCell;
 use url::Url;
 
@@ -13,7 +10,8 @@ const GITHUB_API_URL: &str = "https://api.github.com/repos/";
 const GITHUB_LATEST_RELEASE_ENDPOINT: &str = "/releases/latest";
 
 #[cfg(test)]
-static MOCKITO_URL: &'static str = mockito::SERVER_URL;
+#[allow(deprecated)]
+static MOCKITO_URL: &str = mockito::SERVER_URL;
 #[cfg(test)]
 pub const MOCK_RELEASER_REPO_NAME: &str = "MockZnVja29mZg==fd850fc2e63511e79f720023dfdf24ec";
 
@@ -45,13 +43,13 @@ pub trait Releaser: Clone {
     ///
     /// # Errors
     /// Method returns `Err(Error)` on file or network error.
-    fn fetch_latest_release(&self) -> Result<(Self::SemVersion, Self::DownloadLink), Error>;
+    fn fetch_latest_release(&self) -> Result<(Self::SemVersion, Self::DownloadLink)>;
 
     /// Returns the latest release information that is available from server.
     ///
     /// # Errors
     /// Method returns `Err(Error)` on file or network error.
-    fn latest_release(&self) -> Result<(Version, Url), Error> {
+    fn latest_release(&self) -> Result<(Version, Url)> {
         let (v, url) = self.fetch_latest_release()?;
         Ok((v.into(), url.into()))
     }
@@ -66,6 +64,7 @@ pub trait Releaser: Clone {
 /// See [`updater::gh()`] for how to use this.
 ///
 /// [`updater::gh()`]: struct.Updater.html#method.gh
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GithubReleaser {
     repo: String,
@@ -92,9 +91,9 @@ struct ReleaseAsset {
 }
 
 impl GithubReleaser {
-    fn latest_release_data(&self) -> Result<(), Error> {
+    fn latest_release_data(&self) -> Result<()> {
         debug!("starting latest_release_data");
-        let client = reqwest::Client::new();
+        let client = reqwest::blocking::Client::new();
 
         #[cfg(test)]
         let url = format!("{}{}", MOCKITO_URL, GITHUB_LATEST_RELEASE_ENDPOINT);
@@ -110,7 +109,7 @@ impl GithubReleaser {
             .get(&url)
             .send()?
             .error_for_status()
-            .map_err(|e| e.into())
+            .map_err(Into::into)
             .and_then(|resp| {
                 let mut latest: ReleaseItem = serde_json::from_reader(resp)?;
                 if latest.tag_name.starts_with('v') {
@@ -124,13 +123,13 @@ impl GithubReleaser {
 
     // This implementation of Releaser will favor urls that end with `alfredworkflow`
     // over `alfredworkflow`
-    fn downloadable_url(&self) -> Result<Url, Error> {
+    fn downloadable_url(&self) -> Result<Url> {
         debug!("starting download_url");
         self.latest_release
             .borrow()
             .as_ref()
             .ok_or_else(|| {
-                err_msg(
+                anyhow!(
                 "no release item available, did you first get version by calling latest_version?",
             )
             })
@@ -148,7 +147,7 @@ impl GithubReleaser {
                     .collect::<Vec<&String>>();
                 debug!("  collected release urls: {:?}", urls);
                 match urls.len() {
-                    0 => Err(err_msg("no usable download url")),
+                    0 => Err(anyhow!("no usable download url")),
                     1 => Ok(Url::parse(urls[0])?),
                     _ => {
                         let url = urls.iter().find(|item| item.ends_with("alfredworkflow"));
@@ -159,7 +158,7 @@ impl GithubReleaser {
             })
     }
 
-    fn latest_version(&self) -> Result<Version, Error> {
+    fn latest_version(&self) -> Result<Version> {
         debug!("starting latest_version");
         if self.latest_release.borrow().is_none() {
             self.latest_release_data()?;
@@ -170,7 +169,7 @@ impl GithubReleaser {
             .borrow()
             .as_ref()
             .map(|r| Version::parse(&r.tag_name).ok())
-            .ok_or_else(|| err_msg("Couldn't parse fetched version."))?
+            .ok_or_else(|| anyhow!("Couldn't parse fetched version."))?
             .unwrap();
         debug!("  latest version: {:?}", latest_version);
         Ok(latest_version)
@@ -188,7 +187,7 @@ impl Releaser for GithubReleaser {
         }
     }
 
-    fn fetch_latest_release(&self) -> Result<(Version, Url), Error> {
+    fn fetch_latest_release(&self) -> Result<(Version, Url)> {
         if self.latest_release.borrow().is_none() {
             self.latest_release_data()?;
         }
@@ -215,7 +214,7 @@ pub mod tests {
             releaser
                 .latest_version()
                 .expect("couldn't do latest_version")
-                > Version::from((0, 11, 0))
+                > Version::new(0, 11, 0)
         );
 
         assert_eq!("http://127.0.0.1:1234/releases/download/v0.11.1/alfred-pinboard-rust-v0.11.1.alfredworkflow",

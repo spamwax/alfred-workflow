@@ -29,8 +29,6 @@
 #![doc(html_root_url = "https://docs.rs/alfred-rs/0.5.1")]
 
 extern crate alfred;
-#[macro_use]
-extern crate failure;
 extern crate serde;
 extern crate serde_json;
 
@@ -41,18 +39,15 @@ extern crate mockito;
 extern crate log;
 extern crate chrono;
 extern crate env_logger;
-extern crate reqwest;
 extern crate semver;
 #[macro_use]
 extern crate serde_derive;
 extern crate tempfile;
-extern crate time;
 extern crate url;
-extern crate url_serde;
 
 use alfred::env;
-use failure::err_msg;
-use failure::Error;
+use anyhow::Result;
+use anyhow::{anyhow, bail};
 
 pub mod data;
 pub mod updater;

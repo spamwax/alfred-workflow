@@ -1,4 +1,4 @@
-//! Helper for enabling Alfred workflows to upgrade themselves periodically (Alfred 3)
+//! Helper for enabling Alfred workflows to upgrade themselves periodically (Alfred 3+)
 //!
 //! Using this module, the workflow author can make Alfred check for latest releases
 //! ([`try_update_ready()`] or [`update_ready()`]) from a remote server within adjustable intervals
@@ -57,7 +57,7 @@
 //! To change the interval, use [`set_interval()`] method.
 //!
 //! ```rust,no_run
-//! # extern crate failure;
+//! # use anyhow::Result;
 //! extern crate alfred;
 //!
 //! // This crate
@@ -67,13 +67,12 @@
 //! use alfred_rs::Updater;
 //!
 //! # use std::io;
-//! # use failure::Error;
 //! # fn produce_items_for_user_to_see<'a>() -> Vec<Item<'a>> {
 //! #     Vec::new()
 //! # }
 //! # fn do_some_other_stuff() {}
 //! // Our workflow's main 'runner' function
-//! fn run<'a>() -> Result<Vec<Item<'a>>, Error> {
+//! fn run<'a>() -> Result<Vec<Item<'a>>> {
 //!     let updater = Updater::gh("spamwax/alfred-pinboard-rs")?;
 //!
 //!     // Start the process for getting latest release info
@@ -120,10 +119,10 @@
 //! In this case, the above snippet will try to call server every time workflow is invoked
 //! by Alfred until the operation succeeds.
 
-use chrono::prelude::*;
+use super::{anyhow, bail, chrono, env_logger, semver, serde_json, url, Result};
 use crate::env;
-use env_logger;
-use failure::{err_msg, Error};
+use chrono::prelude::*;
+use chrono::Duration;
 use reqwest;
 use semver::Version;
 use std::cell::RefCell;
@@ -132,10 +131,7 @@ use std::fs::{remove_file, File};
 use std::io::BufWriter;
 use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
-use time::Duration;
 use url::Url;
-use url_serde;
-
 mod imp;
 mod releaser;
 
@@ -195,7 +191,7 @@ impl Updater<GithubReleaser> {
     /// [`update_ready()`]: struct.Updater.html#method.update_ready
     /// [`try_update_ready()`]: struct.Updater.html#method.try_update_ready
     /// [`download_latest()`]: struct.Updater.html#method.download_latest
-    pub fn gh<S>(repo_name: S) -> Result<Self, Error>
+    pub fn gh<S>(repo_name: S) -> Result<Self>
     where
         S: Into<String>,
     {
@@ -222,7 +218,7 @@ where
     /// ```rust,no_run
     /// # extern crate alfred_rs;
     /// # extern crate semver;
-    /// # extern crate failure;
+    /// # use anyhow::Result;
     /// # extern crate url;
     ///
     /// use url::Url;
@@ -231,7 +227,6 @@ where
     /// use alfred_rs::Updater;
     /// use alfred_rs::updater::Releaser;
     /// # use std::env;
-    /// # use failure::Error;
     /// # fn main() {
     ///
     /// #[derive(Clone)]
@@ -246,8 +241,8 @@ where
     ///         MyPrivateHost {}
     ///     }
     ///
-    ///     fn fetch_latest_release(&self) -> Result<(Version, Url), Error> {
-    ///         let version = Version::from((1, 0, 12));
+    ///     fn fetch_latest_release(&self) -> Result<(Version, Url)> {
+    ///         let version = Version::new(1, 0, 12);
     ///         let url = Url::parse("https://ci.remote.cc/release/latest")?;
     ///         Ok((version, url))
     ///     }
@@ -278,7 +273,7 @@ where
     /// [`Releaser`]: trait.Releaser.html
     /// [`GithubReleaser`]: struct.GithubReleaser.html
     /// [`gh()`]: struct.Updater.html#method.gh
-    pub fn new<S>(repo_name: S) -> Result<Updater<T>, Error>
+    pub fn new<S>(repo_name: S) -> Result<Updater<T>>
     where
         S: Into<String>,
     {
@@ -306,12 +301,11 @@ where
     ///
     /// ```rust,no_run
     /// # extern crate alfred_rs;
-    /// # extern crate failure;
-    /// # use failure::Error;
+    /// # use anyhow::Result;
     /// # use alfred_rs::Updater;
     /// # use std::env;
     /// # fn do_some_other_stuff() {}
-    /// # fn test_async() -> Result<(), Error> {
+    /// # fn test_async() -> Result<()> {
     /// let updater = Updater::gh("spamwax/alfred-pinboard-rs")?;
     ///
     /// let rx = updater.init().expect("Error in starting updater.");
@@ -354,12 +348,13 @@ where
     /// [`update_ready()`]: struct.Updater.html#method.update_ready
     /// [`try_update_ready()`]: struct.Updater.html#method.try_update_ready
     /// [`UPDATE_INTERVAL`]: constant.UPDATE_INTERVAL.html
-    pub fn init(&self) -> Result<(), Error> {
+    #[allow(clippy::missing_panics_doc)]
+    pub fn init(&self) -> Result<()> {
+        use self::imp::LATEST_UPDATE_INFO_CACHE_FN_ASYNC;
+        use std::sync::mpsc;
         let _ = env_logger::try_init();
 
         debug!("entering init");
-        use self::imp::LATEST_UPDATE_INFO_CACHE_FN_ASYNC;
-        use std::sync::mpsc;
 
         // file for status of last update check
         let p = Self::build_data_fn()?.with_file_name(LATEST_UPDATE_INFO_CACHE_FN_ASYNC);
@@ -427,10 +422,9 @@ where
     ///
     /// ```no_run
     /// # extern crate alfred_rs;
-    /// # extern crate failure;
+    /// # use anyhow::Result;
     /// use alfred_rs::Updater;
     ///
-    /// # use failure::Error;
     /// # use std::io;
     /// # fn main() {
     /// let updater =
@@ -454,12 +448,11 @@ where
     /// [`init()`]: struct.Updater.html#method.init
     /// [`try_update_ready()`]: struct.Updater.html#method.try_update_ready
     /// [`UPDATE_INTERVAL`]: constant.UPDATE_INTERVAL.html
-    pub fn update_ready(&self) -> Result<bool, Error> {
+    pub fn update_ready(&self) -> Result<bool> {
         if self.state.borrow_worker().is_none() {
             bail!("update_ready_sync is deprecated. use init()");
-        } else {
-            self.update_ready_async(false)
         }
+        self.update_ready_async(false)
     }
 
     /// Try to get release info from background worker and see if a new update is available (non-blocking).
@@ -487,11 +480,10 @@ where
     ///
     /// ```no_run
     /// extern crate alfred_rs;
-    /// # extern crate failure;
+    /// # use anyhow::Result;
     ///
     /// use alfred_rs::Updater;
     ///
-    /// # use failure::Error;
     /// # use std::io;
     ///
     /// # fn do_some_other_stuff() {}
@@ -520,12 +512,11 @@ where
     ///
     /// [`init()`]: struct.Updater.html#method.init
     /// [`update_ready()`]: struct.Updater.html#method.update_ready
-    pub fn try_update_ready(&self) -> Result<bool, Error> {
+    pub fn try_update_ready(&self) -> Result<bool> {
         if self.state.borrow_worker().is_none() {
             bail!("update_ready_sync is deprecated. use init()");
-        } else {
-            self.update_ready_async(true)
         }
+        self.update_ready_async(true)
     }
 
     /// Set workflow's version to `version`.
@@ -538,11 +529,10 @@ where
     ///
     /// ```rust
     /// # extern crate alfred_rs;
-    /// # extern crate failure;
+    /// # use anyhow::Result;
     /// # use alfred_rs::Updater;
     /// # use std::env;
-    /// # use failure::Error;
-    /// # fn ex_set_version() -> Result<(), Error> {
+    /// # fn ex_set_version() -> Result<()> {
     /// # env::set_var("alfred_workflow_uid", "abcdef");
     /// # env::set_var("alfred_workflow_data", env::temp_dir());
     /// # env::set_var("alfred_workflow_version", "0.0.0");
@@ -606,10 +596,9 @@ where
     ///
     /// ```rust,no_run
     /// # extern crate alfred_rs;
-    /// # extern crate failure;
+    /// # use anyhow::Result;
     /// # use alfred_rs::Updater;
-    /// # use failure::Error;
-    /// # fn run() -> Result<(), Error> {
+    /// # fn run() -> Result<()> {
     /// let mut updater = Updater::gh("spamwax/alfred-pinboard-rs")?;
     ///
     /// // Assuming it is has been UPDATE_INTERVAL seconds since last time we ran the
@@ -642,13 +631,13 @@ where
     ///
     /// Within shell, it can be installed by issuing something like:
     /// ```bash
-    /// open -b com.runningwithcrayons.Alfred-3 latest_release_WORKFLOW-NAME.alfredworkflow
+    /// open -b com.runningwithcrayons.Alfred latest_release_WORKFLOW-NAME.alfredworkflow
     /// ```
     ///
     /// Or you can add "Run script" object to your workflow and use environment variables set by
     /// Alfred to automatically open the downloaded release:
     /// ```bash
-    /// open -b com.runningwithcrayons.Alfred-3 "$alfred_workflow_cache/latest_release_$alfred_workflow_name.alfredworkflow"
+    /// open -b com.runningwithcrayons.Alfred "$alfred_workflow_cache/latest_release_$alfred_workflow_name.alfredworkflow"
     /// ```
     ///
     /// # Note
@@ -665,7 +654,7 @@ where
     /// ```rust,no_run
     /// # extern crate alfred;
     /// # extern crate alfred_rs;
-    /// # extern crate failure;
+    /// # use anyhow::Result;
     /// # use std::io;
     /// use alfred_rs::Updater;
     /// use alfred::{ItemBuilder, json};
@@ -707,18 +696,18 @@ where
     /// errors happen, or if [`Releaser`] cannot produce a usable download url.
     ///
     /// [`Releaser`]: trait.Releaser.html
-    pub fn download_latest(&self) -> Result<PathBuf, Error> {
+    pub fn download_latest(&self) -> Result<PathBuf> {
         let url = self
             .state
             .download_url()
-            .ok_or_else(|| err_msg("no release info avail yet"))?;
-        let client = reqwest::Client::new();
+            .ok_or_else(|| anyhow!("no release info avail yet"))?;
+        let client = reqwest::blocking::Client::new();
 
         client
             .get(url)
             .send()?
             .error_for_status()
-            .map_err(|e| e.into())
+            .map_err(Into::into)
             .and_then(|mut resp| {
                 // Get workflow's dedicated cache folder & build a filename
                 let workflow_name = env::workflow_name()
@@ -728,26 +717,26 @@ where
                     .collect::<String>();
                 let latest_release_downloaded_fn = env::workflow_cache()
                     .ok_or_else(|| {
-                        err_msg(
+                        anyhow!(
                             "missing env variable for cache dir. forgot to set workflow bundle id?",
                         )
                     })
-                    .and_then(|mut cache_dir| {
+                    .map(|mut cache_dir| {
                         cache_dir
                             .push(["latest_release_", &workflow_name, ".alfredworkflow"].concat());
-                        Ok(cache_dir)
+                        cache_dir
                     })?;
                 // Save the file
                 File::create(&latest_release_downloaded_fn)
-                    .map_err(|e| e.into())
+                    .map_err(Into::into)
                     .and_then(|fp| {
                         let mut buf_writer = BufWriter::with_capacity(0x10_0000, fp);
                         resp.copy_to(&mut buf_writer)?;
                         Ok(())
                     })
-                    .or_else(|e: Error| {
-                        let _ = remove_file(&latest_release_downloaded_fn);
-                        Err(e)
+                    .map_err(|e: anyhow::Error| {
+                        let _r = remove_file(&latest_release_downloaded_fn);
+                        e
                     })?;
                 Ok(latest_release_downloaded_fn)
             })
@@ -762,9 +751,6 @@ where
     /// So it is possible the method will return a version different than server's version if:
     /// - It's been less than [`UPDATE_INTERVAL`] seconds since last check, or
     /// - Worker thread is busy checking and you called this method before it finishes.
-    ///
-    /// Limit calling this method after [`update_ready()`] or [`try_update_ready()`] indicates that
-    /// a new version is available.
     ///
     /// [`Releaser`]: trait.Releaser.html
     /// [`UPDATE_INTERVAL`]: constant.UPDATE_INTERVAL.html

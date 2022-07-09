@@ -1,0 +1,91 @@
+name: Built, test and lint
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+    tags:
+      - '*'
+  # pull_request:
+  #   branches:
+  #     - master
+
+env:
+  RELEASE_COMMIT: ${{ github.ref_type == 'tag' }}
+
+jobs:
+  Test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        rust: [1.56.0, stable]
+        exclude:
+          - os: ubuntu-latest
+            rust: 1.56.0
+          # - os: windows-latest
+          #   rust: 1.56.0
+          # - os: ubuntu-latest
+          #   rust: nightly
+          # - os: windows-latest
+          #   rust: nightly
+
+    runs-on: ${{ matrix.os }}
+    # runs-on: self-hosted
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - name: Build (${{ matrix.os }}-${{ matrix.rust }})
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+      - name: Set RUST_TEST_{NOCAPTURE, THREADS}
+        run: echo "RUST_TEST_NOCAPTURE=1" >> $GITHUB_ENV && echo "RUST_TEST_THREADS=1" >> $GITHUB_ENV
+      - name: Run test suits in modules (${{ matrix.os }}-${{ matrix.rust }})
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features updater --lib
+      - name: Run doc tests (${{ matrix.os }}-${{ matrix.rust }})
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features updater --doc
+
+  Lint:
+    runs-on: ubuntu-latest
+    if: ${{ github.ref_type == 'tag' }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+      - name: Setup Rust linting tools
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+      - name: Run cargo fmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+      - name: Run full pedantic clippy lints
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --tests --workspace -- -Dclippy::all -Dclippy::pedantic -D warnings
+
+  # Audit:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v1
+  #     - uses: EmbarkStudios/cargo-deny-action@v1
+

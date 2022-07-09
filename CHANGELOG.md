@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.7.0] - 2022-07-09
+### Changed
+- Replace failure crate with anyhow for error handling.
+- Upgrade/Update reqwest, url crate
+- Update some docs
+- minimum rustc version is 1.56
+- Bump version of dependencies in Cargo.toml
+- Use github's actions for CI test.
+
+## [0.6.0] - 2021-06-01
+### Changed
 - Clean-up tests.
 - GithubReleaser now prefers urls ending with .alfredworkflow
 

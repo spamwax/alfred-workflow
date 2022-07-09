@@ -13,7 +13,6 @@
 //!
 //! # Example
 //! ```rust,no_run
-//! # extern crate alfred_rs;
 //! extern crate chrono;
 //! # use chrono::prelude::*;
 //! use alfred_rs::data::Data;
@@ -45,7 +44,7 @@
 //! [`save_to_file()`]: struct.Data.html#method.save_to_file
 //! [`load_from_file()`]: struct.Data.html#method.load_from_file
 //! [documentation]: struct.Data.html
-use super::*;
+use super::{anyhow, bail, env, serde, serde_json, tempfile, Result};
 
 use serde::Deserialize;
 use serde::Serialize;
@@ -70,9 +69,9 @@ impl Data {
     /// in workflow's default data dir.
     /// If the file is missing or corrupt a new (empty) Data instance will be returned.
     ///
-    /// # Errors:
+    /// # Errors
     /// This method can fail if any disk/IO error happens.
-    pub fn load<P: AsRef<Path>>(p: P) -> Result<Self, Error> {
+    pub fn load<P: AsRef<Path>>(p: P) -> Result<Self> {
         if p.as_ref().as_os_str().is_empty() {
             bail!("File name to load data from cannot be empty");
         }
@@ -82,15 +81,15 @@ impl Data {
         let filename = p
             .as_ref()
             .file_name()
-            .ok_or_else(|| err_msg("invalid file name"))?;
+            .ok_or_else(|| anyhow!("invalid file name"))?;
         let wf_data_path = env::workflow_data().ok_or_else(|| {
-            err_msg("missing env variable for data dir. forgot to set workflow bundle id?")
+            anyhow!("missing env variable for data dir. forgot to set workflow bundle id?")
         })?;
 
         let wf_data_fn = wf_data_path.join(filename);
 
         let inner = Self::read_data_from_disk(&wf_data_fn)
-            .or_else(|_| -> Result<_, Error> { Ok(HashMap::new()) })?;
+            .or_else(|_| -> Result<_> { Ok(HashMap::new()) })?;
         Ok(Data {
             inner,
             file_name: wf_data_fn,
@@ -102,12 +101,11 @@ impl Data {
     /// `k` is a type that implements `Into<String>`. `v` can be any type as long as it
     /// implements `Serialize`.
     ///
-    /// This method overwrites values of any existing keys, otherwise adds the key/value pair
-    /// to the workflow's standard data file
+    /// This method overwrites values of any existing keys, otherwise adds
+    /// the key/value pair to the workflow's standard data file
     ///
     /// # Example
     /// ```rust,no_run
-    /// # extern crate alfred_rs;
     /// # extern crate chrono;
     /// # use chrono::prelude::*;
     /// use alfred_rs::data::Data;
@@ -117,9 +115,10 @@ impl Data {
     /// workflow_data.set("user_id", &0xFF);
     /// workflow_data.set("last_log_date", &Utc::now());
     /// ```
-    /// # Errors:
+    /// # Errors
+    ///
     /// If `v` cannot be serialized or there are file IO issues an error is returned.
-    pub fn set<K, V>(&mut self, k: K, v: &V) -> Result<(), Error>
+    pub fn set<K, V>(&mut self, k: K, v: &V) -> Result<()>
     where
         K: Into<String>,
         V: Serialize,
@@ -139,7 +138,6 @@ impl Data {
     ///
     /// # Example
     /// ```rust,no_run
-    /// # extern crate alfred_rs;
     /// # extern crate chrono;
     /// # use chrono::prelude::*;
     /// use alfred_rs::data::Data;
@@ -161,7 +159,7 @@ impl Data {
 
     /// Clear all key-value pairs. Does not affect data on disk.
     pub fn clear(&mut self) {
-        self.inner.clear()
+        self.inner.clear();
     }
 
     /// Function to save (temporary) `data` to file named `p` in workflow's cache dir
@@ -172,7 +170,6 @@ impl Data {
     ///
     /// # Example
     /// ```rust,no_run
-    /// # extern crate alfred_rs;
     /// use alfred_rs::data::Data;
     ///
     /// Data::save_to_file("cached_tags.dat", &vec!["rust", "alfred"]).unwrap();
@@ -186,7 +183,7 @@ impl Data {
     /// [`set`]: struct.Data.html#method.set
     /// [`get`]: struct.Data.html#method.get
     /// [`file_name`]: https://doc.rust-lang.org/std/path/struct.Path.html#method.file_name
-    pub fn save_to_file<P, V>(p: P, data: &V) -> Result<(), Error>
+    pub fn save_to_file<P, V>(p: P, data: &V) -> Result<()>
     where
         P: AsRef<Path>,
         V: Serialize,
@@ -194,24 +191,25 @@ impl Data {
         let filename = p
             .as_ref()
             .file_name()
-            .ok_or_else(|| err_msg("invalid file name"))?;
+            .ok_or_else(|| anyhow!("invalid file name"))?;
         let p = env::workflow_cache()
             .map(|wfc| wfc.join(filename))
             .ok_or_else(|| {
-                err_msg("missing env variable for cache dir. forgot to set workflow bundle id?")
+                anyhow!("missing env variable for cache dir. forgot to set workflow bundle id?")
             })?;
         debug!("saving to: {}", p.to_str().expect(""));
         Self::write_data_to_disk(p, data)
     }
 
-    fn write_data_to_disk<P, V>(p: P, data: &V) -> Result<(), Error>
+    fn write_data_to_disk<P, V>(p: P, data: &V) -> Result<()>
     where
         P: AsRef<Path> + std::fmt::Debug,
         V: Serialize,
     {
+        use std::fs;
         use tempfile::Builder;
         let wfc = env::workflow_cache().ok_or_else(|| {
-            err_msg("missing env variable for cache dir. forgot to set workflow bundle id?")
+            anyhow!("missing env variable for cache dir. forgot to set workflow bundle id?")
         })?;
         let named_tempfile = Builder::new()
             .prefix("alfred_rs_temp")
@@ -227,7 +225,6 @@ impl Data {
         })?;
 
         // Rename over to main file name
-        use std::fs;
         fs::rename(fn_temp, p)?;
         Ok(())
     }
@@ -241,7 +238,6 @@ impl Data {
     /// # Example
     ///
     /// ```rust,no_run
-    /// # extern crate alfred_rs;
     /// use alfred_rs::data::Data;
     ///
     /// let cached_tags: Vec<String> = Data::load_from_file("cached_tags.dat").unwrap();
@@ -265,11 +261,11 @@ impl Data {
         Self::read_data_from_disk(&p).ok()
     }
 
-    fn read_data_from_disk<V>(p: &PathBuf) -> Result<V, Error>
+    fn read_data_from_disk<V>(p: &Path) -> Result<V>
     where
         V: for<'d> Deserialize<'d>,
     {
-        File::open(p).map_err(|e| e.into()).and_then(|fp| {
+        File::open(p).map_err(Into::into).and_then(|fp| {
             let buf_reader = BufReader::with_capacity(0x1000, fp);
             let d: V = serde_json::from_reader(buf_reader)?;
             Ok(d)
@@ -327,7 +323,7 @@ mod tests {
     fn it_saves_loads_from_file() {
         let wfc = setup_workflow_env_vars(true);
         let path = wfc.join("_test_saves_loads_from_file");
-        let _ = remove_file(&path);
+        let _r = remove_file(&path);
 
         let now = Utc::now();
         Data::save_to_file(&path, &now).expect("couldn't write to file");
@@ -340,7 +336,7 @@ mod tests {
     fn it_overwrites_cached_data_file() {
         let wfc = setup_workflow_env_vars(true);
         let path = wfc.join("_test_it_overwrites_cached_data_file");
-        let _ = remove_file(&path);
+        let _r = remove_file(&path);
 
         let ten_millis = time::Duration::from_millis(10);
 
@@ -383,5 +379,4 @@ mod tests {
         }
         path
     }
-
 }
