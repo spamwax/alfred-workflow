@@ -10,6 +10,7 @@ const GITHUB_API_URL: &str = "https://api.github.com/repos/";
 const GITHUB_LATEST_RELEASE_ENDPOINT: &str = "/releases/latest";
 
 #[cfg(test)]
+#[allow(deprecated)]
 static MOCKITO_URL: &str = mockito::SERVER_URL;
 #[cfg(test)]
 pub const MOCK_RELEASER_REPO_NAME: &str = "MockZnVja29mZg==fd850fc2e63511e79f720023dfdf24ec";
@@ -213,7 +214,7 @@ pub mod tests {
             releaser
                 .latest_version()
                 .expect("couldn't do latest_version")
-                > Version::from((0, 11, 0))
+                > Version::new(0, 11, 0)
         );
 
         assert_eq!("http://127.0.0.1:1234/releases/download/v0.11.1/alfred-pinboard-rust-v0.11.1.alfredworkflow",

@@ -130,7 +130,7 @@ where
             })
         } else {
             let current_version = env::workflow_version()
-                .map_or_else(|| Ok(Version::from((0, 0, 0))), |v| Version::parse(&v))?;
+                .map_or_else(|| Ok(Version::new(0, 0, 0)), |v| Version::parse(&v))?;
             let state = UpdaterState {
                 current_version,
                 last_check: Cell::new(None),

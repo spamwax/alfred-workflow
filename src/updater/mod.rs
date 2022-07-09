@@ -119,9 +119,10 @@
 //! In this case, the above snippet will try to call server every time workflow is invoked
 //! by Alfred until the operation succeeds.
 
-use super::{anyhow, bail, chrono, env_logger, semver, serde_json, time, url, Result};
+use super::{anyhow, bail, chrono, env_logger, semver, serde_json, url, Result};
 use crate::env;
 use chrono::prelude::*;
+use chrono::Duration;
 use reqwest;
 use semver::Version;
 use std::cell::RefCell;
@@ -130,7 +131,6 @@ use std::fs::{remove_file, File};
 use std::io::BufWriter;
 use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
-use time::Duration;
 use url::Url;
 mod imp;
 mod releaser;
@@ -242,7 +242,7 @@ where
     ///     }
     ///
     ///     fn fetch_latest_release(&self) -> Result<(Version, Url)> {
-    ///         let version = Version::from((1, 0, 12));
+    ///         let version = Version::new(1, 0, 12);
     ///         let url = Url::parse("https://ci.remote.cc/release/latest")?;
     ///         Ok((version, url))
     ///     }

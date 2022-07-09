@@ -43,7 +43,6 @@ extern crate semver;
 #[macro_use]
 extern crate serde_derive;
 extern crate tempfile;
-extern crate time;
 extern crate url;
 
 use alfred::env;
