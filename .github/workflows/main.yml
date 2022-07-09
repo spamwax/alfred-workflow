@@ -7,9 +7,9 @@ on:
       - develop
     tags:
       - '*'
-  pull_request:
-    branches:
-      - master
+  # pull_request:
+  #   branches:
+  #     - master
 
 env:
   RELEASE_COMMIT: ${{ github.ref_type == 'tag' }}
@@ -32,7 +32,8 @@ jobs:
         #   - os: windows-latest
         #     rust: nightly
 
-    runs-on: ${{ matrix.os }}
+    # runs-on: ${{ matrix.os }}
+    runs-on: self-hosted
 
     steps:
       - name: Checkout repo
