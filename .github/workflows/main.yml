@@ -1,4 +1,4 @@
-name: CI
+name: Built, test & lint
 
 on:
   push:
@@ -10,6 +10,9 @@ on:
   pull_request:
     branches:
       - master
+
+env:
+  RELEASE_COMMIT: ${{ github.ref_type == 'tag' }}
 
 jobs:
   Test:
