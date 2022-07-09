@@ -83,7 +83,6 @@ jobs:
       - name: Run full pedantic clippy lints
         uses: actions-rs/cargo@v1
         if: ${{ env.RELEASE_COMMIT == 'true' }}
-        if: always()
         with:
           command: clippy
           args: --tests --workspace -- -Dclippy::all -Dclippy::pedantic -D warnings
