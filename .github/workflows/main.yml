@@ -14,13 +14,15 @@ on:
 env:
   RELEASE_COMMIT: ${{ github.ref_type == 'tag' }}
   CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+  RUST_LOG: 'debug'
 
 
 jobs:
   Build:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        # os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
         rust: [1.56.0, stable]
         exclude:
           - os: ubuntu-latest
