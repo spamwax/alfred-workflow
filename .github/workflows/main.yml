@@ -78,6 +78,6 @@ jobs:
       #     command: publish
       #     args: --all-features
       - name: Publish to crates.io
-        run: CARGO_REGISTRY_TOKEN=${{ secrets.CARGO_REGISTRY_TOKEN }} cargo pulish --all-features --dry-run && echo ${CARGO_REGISTRY_TOKEN:1:3}
+        run: CARGO_REGISTRY_TOKEN=${{ secrets.CARGO_REGISTRY_TOKEN }} cargo publish --all-features --dry-run && echo ${CARGO_REGISTRY_TOKEN:1:3}
         # run: cargo publish --all-features
         # run: .github/workflows/run_tests.sh
