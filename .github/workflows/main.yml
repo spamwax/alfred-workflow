@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+    tags:
+      - *
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  Test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        rust: [1.45.0, stable, nightly]
+        exclude:
+          - os: ubuntu-latest
+            rust: 1.45.0
+          - os: windows-latest
+            rust: 1.45.0
+          - os: ubuntu-latest
+            rust: nightly
+          - os: windows-latest
+            rust: nightly
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - name: Build (${{ matrix.os }}-${{ matrix.rust }})
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+      - name: Test (${{ matrix.os }}-${{ matrix.rust}})
+        run: .github/workflows/run_tests.sh
+
+  Lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+      - uses: actions-rs/cargo@v1
+        if: always()
+        with:
+          command: clippy
+          args: --tests --workspace -- -Dclippy::all -Dclippy::pedantic -D warnings
+
+  # Audit:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v1
+  #     - uses: EmbarkStudios/cargo-deny-action@v1
+
