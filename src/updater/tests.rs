@@ -230,7 +230,7 @@ fn it_doesnt_download_without_release_info() {
 
     // Since check time is due yet, following will just read cache without
     // getting any release info, hence the last line should panic
-    assert!(updater.update_ready().expect("couldn't check for update"));
+    assert!(!updater.update_ready().expect("couldn't check for update"));
     updater.download_latest().unwrap();
 }
 
@@ -325,5 +325,5 @@ fn first_check_after_installing_workflow() {
     updater.init().expect("couldn't init worker");
 
     // First update_ready is always false.
-    assert!(updater.update_ready().expect("couldn't check for update"));
+    assert!(!updater.update_ready().expect("couldn't check for update"));
 }
