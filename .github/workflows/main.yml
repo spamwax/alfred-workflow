@@ -18,22 +18,20 @@ jobs:
   Test:
     strategy:
       matrix:
-        # os: [ubuntu-latest, macos-latest, windows-latest]
-        os: [macos-latest]
-        # rust: [1.56.0, stable, nightly]
-        rust: [1.56.0, nightly]
-        # exclude:
-        #   - os: ubuntu-latest
-        #     rust: 1.45.0
-        #   - os: windows-latest
-        #     rust: 1.45.0
-        #   - os: ubuntu-latest
-        #     rust: nightly
-        #   - os: windows-latest
-        #     rust: nightly
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        rust: [1.56.0, stable]
+        exclude:
+          - os: ubuntu-latest
+            rust: 1.56.0
+          - os: windows-latest
+            rust: 1.56.0
+          # - os: ubuntu-latest
+          #   rust: nightly
+          # - os: windows-latest
+          #   rust: nightly
 
-    # runs-on: ${{ matrix.os }}
-    runs-on: self-hosted
+    runs-on: ${{ matrix.os }}
+    # runs-on: self-hosted
 
     steps:
       - name: Checkout repo
@@ -60,8 +58,6 @@ jobs:
         with:
           command: test
           args: --features updater --doc
-      # - name: Test (${{ matrix.os }}-${{ matrix.rust}})
-      #   run: .github/workflows/run_tests.sh
 
   Lint:
     runs-on: ubuntu-latest
