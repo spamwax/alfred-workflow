@@ -72,7 +72,12 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+      # - name: Publish to crates.io
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: publish
+      #     args: --all-features
       - name: Publish to crates.io
-        run: .github/workflows/run_tests.sh
+        run: CARGO_REGISTRY_TOKEN=${{ secrets.CARGO_REGISTRY_TOKEN }} cargo pulish --all-features
         # run: cargo publish --all-features
-        # run: CARGO_REGISTRY_TOKEN=${{ secrets.CARGO_REGISTRY_TOKEN }} cargo publish --all-features
+        # run: .github/workflows/run_tests.sh
