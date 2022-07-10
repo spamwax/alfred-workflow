@@ -1,4 +1,4 @@
-name: Test
+name: ci
 
 on:
   push:
@@ -19,6 +19,7 @@ env:
 
 jobs:
   Build:
+    name: Tests
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -51,7 +52,7 @@ jobs:
           command: build
       - name: Set RUST_TEST_{NOCAPTURE, THREADS}
         run: echo "RUST_TEST_NOCAPTURE=1" >> $GITHUB_ENV && echo "RUST_TEST_THREADS=1" >> $GITHUB_ENV
-      - name: Run test suits in modules (${{ matrix.os }}-${{ matrix.rust }})
+      - name: Run module tests (${{ matrix.os }}-${{ matrix.rust }})
         uses: actions-rs/cargo@v1
         with:
           command: test
