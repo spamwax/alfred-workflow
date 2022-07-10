@@ -36,14 +36,14 @@ test_script:
   - if [%APPVEYOR_REPO_TAG%]==[false] (
       set RUST_TEST_NOCAPTURE=1 &&
       cargo build --target %TARGET% &&
-      cargo test ---target %TARGET% --features updater --lib -- --test-threads=1 &&
-      cargo test ---target %TARGET% --features updater --lib -- --test-threads=1 --ignored &&
-      cargo test ---target %TARGET% --features updater --doc
+      cargo test --target %TARGET% --features updater --lib -- --test-threads=1 &&
+      cargo test --target %TARGET% --features updater --lib -- --test-threads=1 --ignored &&
+      cargo test --target %TARGET% --features updater --doc
     )
 
-cache:
-  - C:\Users\appveyor\.cargo\registry
-  - target
+# cache:
+#   - C:\Users\appveyor\.cargo\registry
+#   - target
 
 branches:
   only:
@@ -51,9 +51,9 @@ branches:
     - /^v?\d+\.\d+\.\d+.*$/
     - master
 
-notifications:
-  - provider: Email
-    on_build_success: false
+# notifications:
+#   - provider: Email
+#     on_build_success: false
 
-# Building is done in the test phase, so we disable Appveyor's build phase.
-build: false
+# # Building is done in the test phase, so we disable Appveyor's build phase.
+# build: false

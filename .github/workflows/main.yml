@@ -1,4 +1,4 @@
-name: Built, test and lint
+name: ci
 
 on:
   push:
@@ -13,9 +13,13 @@ on:
 
 env:
   RELEASE_COMMIT: ${{ github.ref_type == 'tag' }}
+  CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+  RUST_LOG: 'debug'
+
 
 jobs:
-  Test:
+  Build:
+    name: Tests
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -48,7 +52,7 @@ jobs:
           command: build
       - name: Set RUST_TEST_{NOCAPTURE, THREADS}
         run: echo "RUST_TEST_NOCAPTURE=1" >> $GITHUB_ENV && echo "RUST_TEST_THREADS=1" >> $GITHUB_ENV
-      - name: Run test suits in modules (${{ matrix.os }}-${{ matrix.rust }})
+      - name: Run module tests (${{ matrix.os }}-${{ matrix.rust }})
         uses: actions-rs/cargo@v1
         with:
           command: test
@@ -58,9 +62,8 @@ jobs:
         with:
           command: test
           args: --features updater --doc
-
-  Lint:
-    runs-on: ubuntu-latest
+  Publish:
+    runs-on: macos-latest
     if: ${{ github.ref_type == 'tag' }}
     steps:
       - name: Checkout repo
@@ -71,21 +74,10 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-          components: rustfmt, clippy
-      - name: Run cargo fmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
-      - name: Run full pedantic clippy lints
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --tests --workspace -- -Dclippy::all -Dclippy::pedantic -D warnings
-
-  # Audit:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v1
-  #     - uses: EmbarkStudios/cargo-deny-action@v1
-
+      # - name: Publish to crates.io
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: publish
+      #     args: --all-features
+      - name: Publish to crates.io
+        run: CARGO_REGISTRY_TOKEN=${{ secrets.CARGO_REGISTRY_TOKEN }} cargo publish --all-features
