@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2022-07-10
+### Changed
+- Add a user-agent to reqwest::Client
+
 ## [0.7.0] - 2022-07-09
 ### Changed
 - Replace failure crate with anyhow for error handling.

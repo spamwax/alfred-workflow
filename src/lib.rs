@@ -26,7 +26,7 @@
 // TODO: Automatically update html_root_url's version when publishing to crates.io
 // TODO: Use https://github.com/softprops/hubcaps for github API?
 
-#![doc(html_root_url = "https://docs.rs/alfred-rs/0.7.0")]
+#![doc(html_root_url = "https://docs.rs/alfred-rs/0.7.1")]
 
 extern crate alfred;
 extern crate serde;
