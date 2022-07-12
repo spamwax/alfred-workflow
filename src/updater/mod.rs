@@ -369,10 +369,10 @@ where
             debug!("  last check was set to now()");
         } else if self.due_to_check() {
             // it's time to talk to remote server
-            debug!(" calling start_releaser_worker");
+            debug!(" past UPDATE_INTERVAL, calling start_releaser_worker");
             self.start_releaser_worker(tx, p)?;
         } else {
-            debug!("  calling read_last_check_status");
+            debug!("  not past UPDATE_INTERVAL yet, calling read_last_check_status");
             let status = Self::read_last_check_status(&p)
                 .map(|last_check| {
                     last_check.and_then(|info| {
