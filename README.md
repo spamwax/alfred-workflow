@@ -1,7 +1,7 @@
 # alfred-rs
 
-![alfred-rs](https://github.com/spamwax/alfred-workflow/actions/workflows/main.yml/badge.svg)
-![alfred-rs](https://github.com/spamwax/alfred-workflow/actions/workflows/lint.yml/badge.svg)
+[![alfred-rs](https://github.com/spamwax/alfred-workflow/actions/workflows/main.yml/badge.svg)](https://github.com/spamwax/alfred-workflow/actions/workflows/main.yml)
+[![alfred-rs](https://github.com/spamwax/alfred-workflow/actions/workflows/lint.yml/badge.svg)](https://github.com/spamwax/alfred-workflow/actions/workflows/lint.yml)
 [![crates.io/crates/alfred-rs](https://img.shields.io/crates/v/alfred-rs)](https://crates.io/crates/alfred-rs)
 [![https://docs.rs/alfred-rs/badge.svg](https://docs.rs/alfred-rs/badge.svg)](https://docs.rs/crate/alfred-rs/)
 
