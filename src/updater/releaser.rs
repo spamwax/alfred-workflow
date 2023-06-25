@@ -57,8 +57,8 @@ pub trait Releaser: Clone {
 
 /// Struct to handle checking and finding release files from `github.com`
 ///
-/// This implementation of `Releaser` will favor files that end with `alfred3workflow`
-/// over `alfredworkflow`. If there are multiple `alfred3workflow`s or `alfredworkflow`s, the first
+/// This implementation of `Releaser` will favor files that end with `alfredworkflow`
+/// over `alfred5workflow`. If there are multiple `alfredworkflow`s or `alfred5workflow`s, the first
 /// one returned by `github.com` will be used.
 ///
 /// See [`updater::gh()`] for how to use this.
@@ -146,8 +146,9 @@ impl GithubReleaser {
                     .filter(|asset| {
                         asset.state == "uploaded"
                             && (asset.browser_download_url.ends_with("alfredworkflow")
-                                || asset.browser_download_url.ends_with("alfred3workflow")
-                                || asset.browser_download_url.ends_with("alfred4workflow"))
+                                || asset.browser_download_url.ends_with("alfred5workflow")
+                                || asset.browser_download_url.ends_with("alfred4workflow")
+                                || asset.browser_download_url.ends_with("alfred3workflow"))
                     })
                     .map(|asset| &asset.browser_download_url)
                     .collect::<Vec<&String>>();

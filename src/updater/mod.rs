@@ -519,11 +519,19 @@ where
         self.update_ready_async(true)
     }
 
+    // TODO: Do we really need to expose set_version method? it doesn't save the version after
+    // setting it so Alfred cannot see it at all. Should it manipulate the Info.plist of the
+    // workflow? <28-07-22, Hamid> //
+
     /// Set workflow's version to `version`.
     ///
     /// Content of `version` needs to follow semantic versioning.
     ///
     /// This method is provided so workflow authors can set the version from within the Rust code.
+    /// Thus, the set version will not have any effect on how Alfred sees the workflow's version since
+    /// this method does not save/presist the version. If that is desired, you may want to use the
+    /// Data module to  save the version info in a file so it can be retreived in the future
+    /// invocation of workflow and your rust executable.
     ///
     /// # Example
     ///
