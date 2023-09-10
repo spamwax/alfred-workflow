@@ -36,7 +36,6 @@ jobs:
           #   rust: nightly
 
     runs-on: ${{ matrix.os }}
-    # runs-on: self-hosted
 
     steps:
       - name: Checkout repo

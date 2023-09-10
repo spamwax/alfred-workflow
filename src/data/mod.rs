@@ -183,6 +183,7 @@ impl Data {
     /// [`set`]: struct.Data.html#method.set
     /// [`get`]: struct.Data.html#method.get
     /// [`file_name`]: https://doc.rust-lang.org/std/path/struct.Path.html#method.file_name
+    #[allow(clippy::missing_panics_doc)]
     pub fn save_to_file<P, V>(p: P, data: &V) -> Result<()>
     where
         P: AsRef<Path>,
@@ -218,7 +219,7 @@ impl Data {
             .tempfile_in(wfc)?;
 
         let fn_temp = named_tempfile.as_ref();
-        File::create(&fn_temp).and_then(|fp| {
+        File::create(fn_temp).and_then(|fp| {
             let buf_writer = BufWriter::with_capacity(0x1000, fp);
             serde_json::to_writer(buf_writer, data)?;
             Ok(())
@@ -250,6 +251,7 @@ impl Data {
     /// [`set`]: struct.Data.html#method.set
     /// [`get`]: struct.Data.html#method.get
     /// [`file_name`]: https://doc.rust-lang.org/std/path/struct.Path.html#method.file_name
+    #[allow(clippy::missing_panics_doc)]
     pub fn load_from_file<P, V>(p: P) -> Option<V>
     where
         P: AsRef<Path>,
