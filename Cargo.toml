@@ -31,7 +31,7 @@ serde_derive = "1.0"
 alfred = "4.0"
 anyhow = "1.0"
 log = "0.4"
-env_logger = "0.9"
+env_logger = "0.10"
 tempfile = "^3.0"
 
 chrono = { version = "0.4", features = ["serde"], optional = true }
