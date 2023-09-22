@@ -39,7 +39,7 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Setup Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -62,12 +62,17 @@ jobs:
         with:
           command: test
           args: --features updater --doc
+      - name: Run all tests (${{ matrix.os }}-${{ matrix.rust }})
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -- --test-threads=1 --nocapture
   Publish:
     runs-on: macos-latest
     if: ${{ github.ref_type == 'tag' }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Setup Rust tools
         uses: actions-rs/toolchain@v1
         with:
